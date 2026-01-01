@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.4"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
+        <PackageReference Include="xunit" Version="2.9.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="E2E\" />
+      <Folder Include="Integration\" />
+      <Folder Include="Unit\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\WhaleWire.Application\WhaleWire.Application.csproj" />
+      <ProjectReference Include="..\WhaleWire.Domain\WhaleWire.Domain.csproj" />
+      <ProjectReference Include="..\WhaleWire.Infrastructure.Ingestion\WhaleWire.Infrastructure.Ingestion.csproj" />
+      <ProjectReference Include="..\WhaleWire.Infrastructure.Messaging\WhaleWire.Infrastructure.Messaging.csproj" />
+      <ProjectReference Include="..\WhaleWire.Infrastructure.Notifications\WhaleWire.Infrastructure.Notifications.csproj" />
+      <ProjectReference Include="..\WhaleWire.Infrastructure.Persistence\WhaleWire.Infrastructure.Persistence.csproj" />
+      <ProjectReference Include="..\WhaleWire.Messages\WhaleWire.Messages.csproj" />
+    </ItemGroup>
+
+</Project>
