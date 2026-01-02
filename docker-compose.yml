@@ -42,8 +42,8 @@ services:
       - "5007:8080"
     environment:
       - DOTNET_ENVIRONMENT=Development
-      - POSTGRES_CONNECTION_STRING=${POSTGRES_CONNECTION_STRING}
-      - RABBITMQ_CONNECTION_STRING=${RABBITMQ_CONNECTION_STRING}
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=whalewire;Username=whalewire;Password=whalewire_dev
+      - ConnectionStrings__RabbitMQ=amqp://whalewire:whalewire_dev@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
