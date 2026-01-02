@@ -21,5 +21,6 @@ USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
+ENV DOTNET_ENVIRONMENT=Development
 COPY --from=publish /app/publish .
 ENTRYPOINT ["./WhaleWire"]
