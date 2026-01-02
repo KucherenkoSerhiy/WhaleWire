@@ -1,11 +1,55 @@
 services:
+  postgres:
+    image: postgres:17
+    container_name: whalewire-postgres
+    environment:
+      POSTGRES_USER: whalewire
+      POSTGRES_PASSWORD: whalewire_dev
+      POSTGRES_DB: whalewire
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whalewire -d whalewire"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: whalewire-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: whalewire
+      RABBITMQ_DEFAULT_PASS: whalewire_dev
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
   whalewire:
     build:
       context: .
       dockerfile: WhaleWire/Dockerfile
+    container_name: whalewire-app
     ports:
       - "5007:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_ENVIRONMENT=Development
+      - POSTGRES_CONNECTION_STRING=${POSTGRES_CONNECTION_STRING}
+      - RABBITMQ_CONNECTION_STRING=${RABBITMQ_CONNECTION_STRING}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
-
+volumes:
+  postgres_data:
+  rabbitmq_data:
