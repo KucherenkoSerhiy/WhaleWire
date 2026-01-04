@@ -34,12 +34,26 @@ public sealed class RabbitMqConsumerService<T>(
             durable: true,
             autoDelete: false,
             cancellationToken: stoppingToken);
+        
+        var dlqName = $"{queueName}.dlq";
+        await channel.QueueDeclareAsync(
+            queue: dlqName,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            cancellationToken: stoppingToken);
 
+        var queueArgs = new Dictionary<string, object>
+        {
+            { "x-dead-letter-exchange", "" },
+            { "x-dead-letter-routing-key", dlqName }
+        };
         await channel.QueueDeclareAsync(
             queue: queueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
+            arguments: queueArgs!,
             cancellationToken: stoppingToken);
 
         await channel.QueueBindAsync(
