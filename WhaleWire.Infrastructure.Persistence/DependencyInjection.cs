@@ -7,18 +7,19 @@ namespace WhaleWire.Infrastructure.Persistence;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddPersistence(
-        this IServiceCollection services,
-        string connectionString)
+    extension(IServiceCollection services)
     {
-        services.AddDbContext<WhaleWireDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        public IServiceCollection AddPersistence(string connectionString)
+        {
+            services.AddDbContext<WhaleWireDbContext>(options =>
+                options.UseNpgsql(connectionString));
 
-        services.AddScoped<IEventRepository, EventRepository>();
-        services.AddScoped<ICheckpointRepository, CheckpointRepository>();
-        services.AddScoped<ILeaseRepository, LeaseRepository>();
+            services.AddScoped<IEventRepository, EventRepository>();
+            services.AddScoped<ICheckpointRepository, CheckpointRepository>();
+            services.AddScoped<ILeaseRepository, LeaseRepository>();
 
-        return services;
+            return services;
+        }
     }
 }
 
