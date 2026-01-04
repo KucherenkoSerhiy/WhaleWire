@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using WhaleWire.Configuration;
 using WhaleWire.Handlers;
 using WhaleWire.Infrastructure.Messaging;
@@ -29,6 +30,24 @@ builder.Services.AddMessageConsumer<CanonicalEventReady, CanonicalEventReadyHand
 builder.Services.AddHostedService<SchedulerService>();
 
 var host = builder.Build();
+
+using (var scope = host.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<WhaleWireDbContext>();
+    var migrationLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        migrationLogger.LogInformation("Migrating database...");
+        await dbContext.Database.MigrateAsync();
+        migrationLogger.LogInformation("Migrated database successfully.");
+    }
+    catch (Exception ex)
+    {
+        migrationLogger.LogError(ex, "Failed to migrate database.");
+        throw;
+    }
+}
 
 // Log startup and config summary (no secrets)
 var logger = host.Services.GetRequiredService<ILogger<Program>>();
