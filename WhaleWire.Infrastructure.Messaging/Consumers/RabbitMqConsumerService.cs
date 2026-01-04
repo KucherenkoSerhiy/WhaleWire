@@ -96,9 +96,70 @@ public sealed class RabbitMqConsumerService<T>(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error processing message of type {Type}", typeof(T).Name);
-            await channel.BasicNackAsync(deliveryTag,
-                multiple: false, requeue: true, cancellationToken: stoppingToken);
+            await HandleErrorsAsync(channel, deliveryTag, stoppingToken, e);
+        }
+    }
+
+    
+    // Track retry attempts for delivery tag
+    private readonly Dictionary<ulong, int> _retryAttempts = new();
+    private const int MaxRetries = 3;
+    private readonly TimeSpan[] _retryDelays =
+    [
+        TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(30)
+    ];
+    
+    private async Task HandleErrorsAsync(IChannel channel, ulong deliveryTag, CancellationToken stoppingToken, Exception exception)
+    {
+        var attempts = _retryAttempts.GetValueOrDefault(deliveryTag, 0);
+        attempts++;
+        _retryAttempts[deliveryTag] = attempts;
+        
+        logger.LogError(
+            exception,
+            "Error processing message of type {Type} (attempt {Attempt}/{MaxRetries})",
+            typeof(T).Name,
+            attempts,
+            MaxRetries);
+        
+        if (attempts >= MaxRetries)
+        {
+            // Max retries reached - reject without requeue (goes to dead-letter if configured)
+            logger.LogError(
+                "Message failed {MaxRetries} times, rejecting without requeue. Type: {Type}",
+                MaxRetries,
+                typeof(T).Name);
+
+            await channel.BasicNackAsync(
+                deliveryTag,
+                multiple: false,
+                requeue: false,
+                cancellationToken: stoppingToken);
+
+            _retryAttempts.Remove(deliveryTag);
+        }
+        else
+        {
+            // Apply exponential backoff before requeue
+            var delay = attempts <= _retryDelays.Length 
+                ? _retryDelays[attempts - 1] 
+                : _retryDelays[^1];
+
+            logger.LogWarning(
+                "Requeuing message after {Delay}s delay (attempt {Attempt}/{MaxRetries})",
+                delay.TotalSeconds,
+                attempts,
+                MaxRetries);
+
+            await Task.Delay(delay, stoppingToken);
+
+            await channel.BasicNackAsync(
+                deliveryTag,
+                multiple: false,
+                requeue: true,
+                cancellationToken: stoppingToken);
         }
     }
 }
