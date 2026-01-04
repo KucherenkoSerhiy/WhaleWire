@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Options;
 using WhaleWire.Configuration;
+using WhaleWire.Handlers;
+using WhaleWire.Infrastructure.Messaging;
 using WhaleWire.Infrastructure.Persistence;
+using WhaleWire.Messages;
 using WhaleWire.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -9,12 +12,20 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.Configure<SchedulerOptions>(
     builder.Configuration.GetSection(SchedulerOptions.SectionName));
 
-// Infrastructure
+// Infrastructure - Persistence
 var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres") 
     ?? throw new InvalidOperationException("Postgres connection string is required");
 builder.Services.AddPersistence(postgresConnectionString);
 
-// Services
+// Infrastructure - Messaging
+var rabbitMqConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")
+    ?? throw new InvalidOperationException("RabbitMQ connection string is required");
+builder.Services.AddMessaging(rabbitMqConnectionString);
+
+// Message consumers
+builder.Services.AddMessageConsumer<CanonicalEventReady, CanonicalEventReadyHandler>();
+
+// Hosted services
 builder.Services.AddHostedService<SchedulerService>();
 
 var host = builder.Build();
