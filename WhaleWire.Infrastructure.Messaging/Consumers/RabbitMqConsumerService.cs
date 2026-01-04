@@ -9,20 +9,27 @@ using WhaleWire.Infrastructure.Messaging.Connections;
 
 namespace WhaleWire.Infrastructure.Messaging.Consumers;
 
-public sealed class RabbitMqConsumerService<T>(
-    RabbitMqConnection connection,
-    IServiceScopeFactory scopeFactory,
-    ILogger<RabbitMqConsumerService<T>> logger)
-    : BackgroundService where T : class
+public sealed class RabbitMqConsumerService<T> : BackgroundService where T : class
 {
     private static JsonSerializerOptions JsonOptions => new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
+    
+    public RabbitMqConsumerService(RabbitMqConnection connection,
+        IServiceScopeFactory scopeFactory,
+        ILogger<RabbitMqConsumerService<T>> logger)
+    {
+        _connection = connection;
+        _scopeFactory = scopeFactory;
+        _logger = logger;
+        _cleanupTimer = new Timer(_ => CleanupOldRetries(), null, 
+            TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var channel = await connection.GetChannelAsync(stoppingToken);
+        var channel = await _connection.GetChannelAsync(stoppingToken);
 
         var exchangeName = GetExchangeName();
         var queueName = GetQueueName();
@@ -96,13 +103,13 @@ public sealed class RabbitMqConsumerService<T>(
             var message = JsonSerializer.Deserialize<T>(messageBody.Span, JsonOptions);
             if (message is null)
             {
-                logger.LogWarning("Failed to deserialize message of type {Type}", typeof(T).Name);
+                _logger.LogWarning("Failed to deserialize message of type {Type}", typeof(T).Name);
                 await channel.BasicNackAsync(deliveryTag,
                     multiple: false, requeue: false, stoppingToken);
                 return;
             }
 
-            using var scope = scopeFactory.CreateScope();
+            using var scope = _scopeFactory.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<IMessageConsumer<T>>();
             await handler.HandleAsync(message, stoppingToken);
 
@@ -124,14 +131,19 @@ public sealed class RabbitMqConsumerService<T>(
         TimeSpan.FromSeconds(5),
         TimeSpan.FromSeconds(30)
     ];
-    
+
+    private readonly RabbitMqConnection _connection;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<RabbitMqConsumerService<T>> _logger;
+    private readonly Timer _cleanupTimer;
+
     private async Task HandleErrorsAsync(IChannel channel, ulong deliveryTag, CancellationToken stoppingToken, Exception exception)
     {
         var attempts = _retryAttempts.GetValueOrDefault(deliveryTag, 0);
         attempts++;
         _retryAttempts[deliveryTag] = attempts;
         
-        logger.LogError(
+        _logger.LogError(
             exception,
             "Error processing message of type {Type} (attempt {Attempt}/{MaxRetries})",
             typeof(T).Name,
@@ -141,7 +153,7 @@ public sealed class RabbitMqConsumerService<T>(
         if (attempts >= MaxRetries)
         {
             // Max retries reached - reject without requeue (goes to dead-letter if configured)
-            logger.LogError(
+            _logger.LogError(
                 "Message failed {MaxRetries} times, rejecting without requeue. Type: {Type}",
                 MaxRetries,
                 typeof(T).Name);
@@ -161,7 +173,7 @@ public sealed class RabbitMqConsumerService<T>(
                 ? _retryDelays[attempts - 1] 
                 : _retryDelays[^1];
 
-            logger.LogWarning(
+            _logger.LogWarning(
                 "Requeuing message after {Delay}s delay (attempt {Attempt}/{MaxRetries})",
                 delay.TotalSeconds,
                 attempts,
@@ -174,6 +186,17 @@ public sealed class RabbitMqConsumerService<T>(
                 multiple: false,
                 requeue: true,
                 cancellationToken: stoppingToken);
+        }
+    }
+    
+    private void CleanupOldRetries()
+    {
+        // Remove entries older than 1 hour (assuming they're stale)
+        // This is a simplified version - ideally track timestamps
+        if (_retryAttempts.Count > 1000)
+        {
+            _retryAttempts.Clear();
+            _logger.LogDebug("Cleared retry attempts cache");
         }
     }
 }
