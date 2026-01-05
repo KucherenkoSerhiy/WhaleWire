@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Infrastructure.Messaging.Configuration;
 using WhaleWire.Infrastructure.Messaging.Connections;
@@ -11,10 +12,12 @@ public static class DependencyInjection
 {
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddMessaging(string connectionString)
+        public IServiceCollection AddMessaging(
+            IConfiguration configuration, string connectionString)
         {
             services.Configure<RabbitMqOptions>(options =>
                 options.ConnectionString = connectionString);
+            services.Configure<RabbitMqRetryOptions>(configuration.GetSection("RabbitMqRetry"));
 
             services.AddSingleton<RabbitMqConnection>();
             services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();

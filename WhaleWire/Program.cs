@@ -21,7 +21,7 @@ builder.Services.AddPersistence(postgresConnectionString);
 // Infrastructure - Messaging
 var rabbitMqConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")
     ?? throw new InvalidOperationException("RabbitMQ connection string is required");
-builder.Services.AddMessaging(rabbitMqConnectionString);
+builder.Services.AddMessaging(builder.Configuration, rabbitMqConnectionString);
 
 // Message consumers
 builder.Services.AddMessageConsumer<CanonicalEventReady, CanonicalEventReadyHandler>();

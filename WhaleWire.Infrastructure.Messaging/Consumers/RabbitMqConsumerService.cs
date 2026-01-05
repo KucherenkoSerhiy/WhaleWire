@@ -2,9 +2,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using WhaleWire.Application.Messaging;
+using WhaleWire.Infrastructure.Messaging.Configuration;
 using WhaleWire.Infrastructure.Messaging.Connections;
 
 namespace WhaleWire.Infrastructure.Messaging.Consumers;
@@ -16,13 +18,21 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
     
+    private readonly RabbitMqConnection _connection;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<RabbitMqConsumerService<T>> _logger;
+    private readonly RabbitMqRetryOptions _options;
+    private readonly Timer _cleanupTimer;
+    
     public RabbitMqConsumerService(RabbitMqConnection connection,
         IServiceScopeFactory scopeFactory,
-        ILogger<RabbitMqConsumerService<T>> logger)
+        ILogger<RabbitMqConsumerService<T>> logger,
+        IOptions<RabbitMqRetryOptions> options)
     {
         _connection = connection;
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _options = options.Value;
         _cleanupTimer = new Timer(_ => CleanupOldRetries(), null, 
             TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
     }
@@ -124,18 +134,6 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
     
     // Track retry attempts for delivery tag
     private readonly Dictionary<ulong, int> _retryAttempts = new();
-    private const int MaxRetries = 3;
-    private readonly TimeSpan[] _retryDelays =
-    [
-        TimeSpan.FromSeconds(1),
-        TimeSpan.FromSeconds(5),
-        TimeSpan.FromSeconds(30)
-    ];
-
-    private readonly RabbitMqConnection _connection;
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<RabbitMqConsumerService<T>> _logger;
-    private readonly Timer _cleanupTimer;
 
     private async Task HandleErrorsAsync(IChannel channel, ulong deliveryTag, CancellationToken stoppingToken, Exception exception)
     {
@@ -148,14 +146,14 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
             "Error processing message of type {Type} (attempt {Attempt}/{MaxRetries})",
             typeof(T).Name,
             attempts,
-            MaxRetries);
+            _options.MaxRetries);
         
-        if (attempts >= MaxRetries)
+        if (attempts >= _options.MaxRetries)
         {
             // Max retries reached - reject without requeue (goes to dead-letter if configured)
             _logger.LogError(
                 "Message failed {MaxRetries} times, rejecting without requeue. Type: {Type}",
-                MaxRetries,
+                _options.MaxRetries,
                 typeof(T).Name);
 
             await channel.BasicNackAsync(
@@ -169,15 +167,15 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
         else
         {
             // Apply exponential backoff before requeue
-            var delay = attempts <= _retryDelays.Length 
-                ? _retryDelays[attempts - 1] 
-                : _retryDelays[^1];
+            var delay = attempts <= _options.RetryDelays.Length 
+                ? _options.RetryDelays[attempts - 1] 
+                : _options.RetryDelays[^1];
 
             _logger.LogWarning(
                 "Requeuing message after {Delay}s delay (attempt {Attempt}/{MaxRetries})",
                 delay.TotalSeconds,
                 attempts,
-                MaxRetries);
+                _options.MaxRetries);
 
             await Task.Delay(delay, stoppingToken);
 
