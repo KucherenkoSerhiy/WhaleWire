@@ -14,9 +14,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhaleWire.Infrastructure.Me
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhaleWire.Infrastructure.Notifications", "WhaleWire.Infrastructure.Notifications\WhaleWire.Infrastructure.Notifications.csproj", "{D3EB0806-97AA-4866-887C-CD55495D9784}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhaleWire.Tests", "WhaleWire.Tests\WhaleWire.Tests.csproj", "{D10C0F98-1C9C-4579-AAE8-660513812AB5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhaleWire.Tests.Slow", "WhaleWire.Tests.Slow\WhaleWire.Tests.Slow.csproj", "{D10C0F98-1C9C-4579-AAE8-660513812AB5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhaleWire", "WhaleWire\WhaleWire.csproj", "{DD1BDC5A-2981-47B3-BA96-2B815C09CC9B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhaleWire.Tests.Unit", "WhaleWire.Tests.Unit\WhaleWire.Tests.Unit.csproj", "{24B5F05B-688B-495E-B61A-9D61CC951503}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhaleWire.Tests.Common", "WhaleWire.Tests.Common\WhaleWire.Tests.Common.csproj", "{74AB3030-92E5-45EB-B702-22328D810F2D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -60,5 +64,13 @@ Global
 		{DD1BDC5A-2981-47B3-BA96-2B815C09CC9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD1BDC5A-2981-47B3-BA96-2B815C09CC9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD1BDC5A-2981-47B3-BA96-2B815C09CC9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24B5F05B-688B-495E-B61A-9D61CC951503}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24B5F05B-688B-495E-B61A-9D61CC951503}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24B5F05B-688B-495E-B61A-9D61CC951503}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24B5F05B-688B-495E-B61A-9D61CC951503}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74AB3030-92E5-45EB-B702-22328D810F2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74AB3030-92E5-45EB-B702-22328D810F2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74AB3030-92E5-45EB-B702-22328D810F2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74AB3030-92E5-45EB-B702-22328D810F2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
