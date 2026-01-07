@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AutoFixture" Version="4.18.1" />
+        <PackageReference Include="AutoFixture.Xunit2" Version="4.18.1" />
+        <PackageReference Include="Bogus" Version="35.6.1" />
+        <PackageReference Include="FluentAssertions" Version="7.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\WhaleWire.Infrastructure.Persistence\WhaleWire.Infrastructure.Persistence.csproj" />
+        <ProjectReference Include="..\WhaleWire.Messages\WhaleWire.Messages.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Extensions\" />
+    </ItemGroup>
+
+</Project>
