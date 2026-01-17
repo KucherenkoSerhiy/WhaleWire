@@ -24,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\WhaleWire.Infrastructure.Ingestion\WhaleWire.Infrastructure.Ingestion.csproj" />
       <ProjectReference Include="..\WhaleWire.Infrastructure.Messaging\WhaleWire.Infrastructure.Messaging.csproj" />
       <ProjectReference Include="..\WhaleWire.Infrastructure.Persistence\WhaleWire.Infrastructure.Persistence.csproj" />
       <ProjectReference Include="..\WhaleWire.Messages\WhaleWire.Messages.csproj" />

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Application.Persistence;
+using WhaleWire.Domain;
 using WhaleWire.Messages;
 using WhaleWire.Tests.Integration.TestFixtures;
 
@@ -20,14 +21,13 @@ public class IdempotencyIntegrationTests(WhaleWireIntegrationFixture fixture)
         var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
         var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
 
-        var testEvent = new CanonicalEventReady
+        var testEvent = new BlockchainEvent
         {
             EventId = $"integration-test-{Guid.NewGuid()}",
             Chain = "ton-testnet",
             Provider = "ton-test-provider",
             Address = "EQIntegrationTest",
-            Lt = 999,
-            TxHash = "integration-hash",
+            Cursor = new Cursor(999, "integration-hash"),
             RawJson = """{"test": "integration"}""",
             OccurredAt = DateTime.UtcNow
         };
@@ -35,10 +35,10 @@ public class IdempotencyIntegrationTests(WhaleWireIntegrationFixture fixture)
         // Act - Insert twice
         var firstInsert = await eventRepo.UpsertEventIdempotentAsync(
             testEvent.EventId, testEvent.Chain, testEvent.Address,
-            testEvent.Lt, testEvent.TxHash, testEvent.OccurredAt, testEvent.RawJson);
+            testEvent.Cursor.Primary, testEvent.Cursor.Secondary, testEvent.OccurredAt, testEvent.RawJson);
         var secondInsert = await eventRepo.UpsertEventIdempotentAsync(
             testEvent.EventId, testEvent.Chain, testEvent.Address,
-            testEvent.Lt, testEvent.TxHash, testEvent.OccurredAt, testEvent.RawJson);
+            testEvent.Cursor.Primary, testEvent.Cursor.Secondary, testEvent.OccurredAt, testEvent.RawJson);
 
         // Assert
         firstInsert.Should().BeTrue();

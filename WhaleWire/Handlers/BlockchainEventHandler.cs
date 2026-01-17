@@ -8,12 +8,12 @@ using WhaleWire.Configuration;
 
 namespace WhaleWire.Handlers;
 
-public sealed class CanonicalEventReadyHandler(
+public sealed class BlockchainEventHandler(
     IEventRepository eventRepository,
     ICheckpointRepository  checkpointRepository,
-    ILogger<CanonicalEventReadyHandler> logger,
+    ILogger<BlockchainEventHandler> logger,
     IOptions<CircuitBreakerOptions> options)
-    : IMessageConsumer<CanonicalEventReady>
+    : IMessageConsumer<BlockchainEvent>
 {
     private readonly AsyncCircuitBreakerPolicy _circuitBreaker = Policy
         .Handle<Exception>()
@@ -21,7 +21,7 @@ public sealed class CanonicalEventReadyHandler(
             exceptionsAllowedBeforeBreaking: options.Value.ExceptionsAllowedBeforeBreaking,
             durationOfBreak: TimeSpan.FromMinutes(options.Value.DurationOfBreakMinutes));
 
-    public async Task HandleAsync(CanonicalEventReady message, CancellationToken token = default)
+    public async Task HandleAsync(BlockchainEvent message, CancellationToken token = default)
     {
         await _circuitBreaker.ExecuteAsync(async () =>
         {
@@ -32,8 +32,8 @@ public sealed class CanonicalEventReadyHandler(
                 eventId: message.EventId,
                 chain: message.Chain,
                 address: message.Address,
-                lt: message.Lt,
-                txHash: message.TxHash,
+                lt: message.Cursor.Primary,
+                txHash: message.Cursor.Secondary,
                 blockTime: message.OccurredAt,
                 rawJson: message.RawJson,
                 ct: token);
@@ -44,8 +44,8 @@ public sealed class CanonicalEventReadyHandler(
                     message.Chain,
                     message.Address,
                     message.Provider,
-                    message.Lt,
-                    message.TxHash,
+                    message.Cursor.Primary,
+                    message.Cursor.Secondary,
                     token);
             }
 

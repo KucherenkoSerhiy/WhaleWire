@@ -7,4 +7,3 @@ public sealed class SchedulerOptions
     public bool Enabled { get; init; } = true;
     public int PollingIntervalSeconds { get; init; } = 60;
 }
-

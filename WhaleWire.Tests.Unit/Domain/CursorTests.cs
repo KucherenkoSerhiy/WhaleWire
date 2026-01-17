@@ -1,5 +1,5 @@
 using FluentAssertions;
-using WhaleWire.Application.Blockchain;
+using WhaleWire.Domain;
 
 namespace WhaleWire.Tests.Unit.Domain;
 

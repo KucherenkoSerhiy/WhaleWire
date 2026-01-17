@@ -32,7 +32,7 @@ var rabbitMqConnectionString = builder.Configuration.GetConnectionString("Rabbit
 builder.Services.AddMessaging(builder.Configuration, rabbitMqConnectionString);
 
 // Message consumers
-builder.Services.AddMessageConsumer<CanonicalEventReady, CanonicalEventReadyHandler>();
+builder.Services.AddMessageConsumer<BlockchainEvent, BlockchainEventHandler>();
 
 // Hosted services
 builder.Services.AddHostedService<SchedulerService>();

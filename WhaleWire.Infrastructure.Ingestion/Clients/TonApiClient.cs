@@ -1,8 +1,11 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Options;
 using WhaleWire.Application.Blockchain;
+using WhaleWire.Domain;
+using WhaleWire.Domain.Services;
 using WhaleWire.Infrastructure.Ingestion.Configuration;
 using WhaleWire.Infrastructure.Ingestion.Models;
+using WhaleWire.Messages;
 
 namespace WhaleWire.Infrastructure.Ingestion.Clients;
 
@@ -15,23 +18,24 @@ public sealed class TonApiClient(
     public string Chain => "ton";
     public string Provider => "tonapi";
 
-    public async Task<IReadOnlyList<RawChainEvent>> GetEventsAsync(
+    public async Task<IReadOnlyList<BlockchainEvent>> GetEventsAsync(
         string address,
         Cursor? afterCursor,
         int limit,
-        CancellationToken token = default)
+        CancellationToken ct = default)
     {
-        var tonTxs = await FetchFromApiAsync(address, afterCursor, limit, token);
+        var tonTxs = await FetchFromApiAsync(address, afterCursor, limit, ct);
         
-        return tonTxs.Select(tx => new RawChainEvent(
-            Chain: Chain,
-            Provider: Provider,
-            Address: address,
-            Cursor: new Cursor(tx.Lt, tx.Hash),
-            Hash: tx.Hash,
-            OccurredAt: DateTimeOffset.FromUnixTimeSeconds(tx.Utime).UtcDateTime,
-            RawJson: tx.RawJson ?? JsonSerializer.Serialize(tx)
-        )).ToList();
+        return tonTxs.Select(tx => new BlockchainEvent
+        {
+            EventId = EventIdGenerator.Generate(Chain, address, tx.Lt, tx.Hash),
+            Chain = Chain,
+            Provider = Provider,
+            Address = address,
+            Cursor = new Cursor(tx.Lt, tx.Hash),
+            OccurredAt = DateTimeOffset.FromUnixTimeSeconds(tx.Utime).UtcDateTime,
+            RawJson = tx.RawJson ?? JsonSerializer.Serialize(tx)
+        }).ToList();
     }
     
     private async Task<IReadOnlyList<TonTransaction>> FetchFromApiAsync(

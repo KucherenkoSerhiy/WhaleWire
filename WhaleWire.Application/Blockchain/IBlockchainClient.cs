@@ -1,13 +1,16 @@
-﻿namespace WhaleWire.Application.Blockchain;
+﻿using WhaleWire.Domain;
+using WhaleWire.Messages;
+
+namespace WhaleWire.Application.Blockchain;
 
 public interface IBlockchainClient
 {
-    string Chain {  get; }
+    string Chain { get; }
     string Provider { get; }
 
-    Task<IReadOnlyList<RawChainEvent>> GetEventsAsync(
+    Task<IReadOnlyList<BlockchainEvent>> GetEventsAsync(
         string address,
-        Cursor? affectedCursor,
+        Cursor? afterCursor,
         int limit,
-        CancellationToken token);
+        CancellationToken ct = default);
 }

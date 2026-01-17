@@ -1,4 +1,4 @@
-﻿namespace WhaleWire.Application.Blockchain;
+﻿namespace WhaleWire.Domain;
 
 public sealed record Cursor(long Primary, string Secondary)
 {
