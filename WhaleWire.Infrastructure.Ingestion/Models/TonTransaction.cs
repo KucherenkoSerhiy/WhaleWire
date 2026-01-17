@@ -1,6 +1,14 @@
-﻿namespace WhaleWire.Infrastructure.Ingestion.Models;
+﻿using System.Text.Json.Serialization;
 
-public class TonTransaction
+namespace WhaleWire.Infrastructure.Ingestion.Models;
+
+public sealed class TonTransaction
 {
-    
+    [JsonPropertyName("lt")] public required long Lt { get; init; }
+
+    [JsonPropertyName("hash")] public required string Hash { get; init; }
+
+    [JsonPropertyName("utime")] public required long Utime { get; init; }
+
+    public string? RawJson { get; set; }
 }

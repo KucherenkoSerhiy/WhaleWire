@@ -1,6 +1,9 @@
-﻿namespace WhaleWire.Infrastructure.Ingestion.Models;
+﻿using System.Text.Json.Serialization;
 
-public sealed class TonApiResponse
+namespace WhaleWire.Infrastructure.Ingestion.Models;
+
+public sealed class TonApiTransactionsResponse
 {
-    
+    [JsonPropertyName("transactions")] 
+    public required IReadOnlyList<TonTransaction> Transactions { get; init; }
 }

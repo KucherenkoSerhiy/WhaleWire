@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\WhaleWire.Domain\WhaleWire.Domain.csproj" />
+      <ProjectReference Include="..\WhaleWire.Messages\WhaleWire.Messages.csproj" />
     </ItemGroup>
 
 </Project>
