@@ -9,6 +9,7 @@ public sealed class WhaleWireDbContext(DbContextOptions<WhaleWireDbContext> opti
     public DbSet<BlockchainEvent> Events => Set<BlockchainEvent>();
     public DbSet<Checkpoint> Checkpoints => Set<Checkpoint>();
     public DbSet<AddressLease> AddressLeases => Set<AddressLease>();
+    public DbSet<MonitoredAddress> MonitoredAddresses => Set<MonitoredAddress>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
