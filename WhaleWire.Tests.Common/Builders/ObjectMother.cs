@@ -26,6 +26,13 @@ public static class ObjectMother
         public static CheckpointTestDataBuilder WithConsistentLtAndHash(long lt) =>
             new CheckpointTestDataBuilder()
                 .WithLastLtAndHash(lt, $"hash-at-lt-{lt}");
+
+        public static Infrastructure.Persistence.Entities.Checkpoint CreateEntity(long lt, string hash)
+        {
+            var data = Default().WithLastLtAndHash(lt, hash).Build();
+            return Infrastructure.Persistence.Entities.Checkpoint.Create(
+                data.Chain, data.Address, data.Provider, data.LastLt, data.LastHash);
+        }
     }
 
     public static class Leases

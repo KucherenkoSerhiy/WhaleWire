@@ -1,5 +1,4 @@
-﻿using AutoFixture;
-using FluentAssertions;
+﻿using FluentAssertions;
 using WhaleWire.Infrastructure.Persistence.Repositories;
 using WhaleWire.Tests.Common.Builders;
 using WhaleWire.Tests.Common.Fixtures;
@@ -8,8 +7,15 @@ namespace WhaleWire.Tests.Unit.Repositories;
 
 public sealed class CheckpointRepositoryTests : InMemoryDbContextFixture
 {
+    private const string Chain = "ton";
+    private const string Address = "addr1";
+    private const string Provider = "tonapi";
+    private const long OldLt = 100;
+    private const string OldHash = "hash-100";
+    private const long NewLt = 200;
+    private const string NewHash = "hash-200";
+
     private readonly CheckpointRepository _repository;
-    private readonly Fixture _fixture = new();
 
     public CheckpointRepositoryTests()
     {
@@ -17,62 +23,52 @@ public sealed class CheckpointRepositoryTests : InMemoryDbContextFixture
     }
 
     [Fact]
-    public async Task UpdateCheckpoint_WithExplicitlyRelatedValues_Succeeds()
+    public async Task GetCheckpoint_WhenExists_ReturnsCheckpoint()
     {
-        // Arrange
-        var targetLt = _fixture.Create<long>();
-        var checkpoint = ObjectMother.Checkpoints
-            .WithConsistentLtAndHash(targetLt)
-            .Build();
-        var expectedLastHash = checkpoint.LastHash;
+        var data = ObjectMother.Checkpoints.WithConsistentLtAndHash(OldLt).Build();
+        await _repository.UpdateCheckpointMonotonicAsync(
+            data.Chain, data.Address, data.Provider, data.LastLt, data.LastHash);
 
-        // Act
-        await _repository.UpdateCheckpointAsync(
-            checkpoint.Chain, checkpoint.Address, checkpoint.Provider,
-            checkpoint.LastLt, checkpoint.LastHash);
+        var result = await _repository.GetCheckpointAsync(
+            data.Chain, data.Address, data.Provider);
 
-        // Assert
-        var saved = await _repository.GetCheckpointAsync(
-            checkpoint.Chain, checkpoint.Address, checkpoint.Provider);
-        
-        saved.Should().NotBeNull();
-        saved!.LastLt.Should().Be(targetLt);
-        saved.LastHash.Should().Be(expectedLastHash);
+        result.Should().NotBeNull();
+        result!.LastLt.Should().Be(OldLt);
+        result.LastHash.Should().Be(data.LastHash);
     }
 
     [Fact]
-    public async Task UpdateCheckpoint_Progressive_MaintainsOnlyOneRow()
+    public async Task GetCheckpoint_WhenNotFound_ReturnsNull()
     {
-        // Arrange
-        var address = $"address-{_fixture.Create<string>()}";
-        var hash1 = "hash-100";
-        var lt1 = 100;
-        var checkpoint1 = ObjectMother.Checkpoints
-            .ForAddress(address)
-            .WithLastLtAndHash(lt1, hash1)
-            .Build();
+        var result = await _repository.GetCheckpointAsync(Chain, Address, Provider);
 
-        var hash2 = "hash-200";
-        var lt2 = 200;
-        var checkpoint2 = ObjectMother.Checkpoints
-            .ForAddress(address)
-            .WithLastLtAndHash(lt2, hash2)
-            .Build();
-
-        // Act
-        await UpdateCheckpointAsync(checkpoint1);
-        await UpdateCheckpointAsync(checkpoint2);
-
-        // Assert
-        var final = await _repository.GetCheckpointAsync(
-            checkpoint2.Chain, checkpoint2.Address, checkpoint2.Provider);
-
-        final!.LastLt.Should().Be(lt2);
-        final.LastHash.Should().Be(hash2);
-        Context.Checkpoints.Should().ContainSingle();
+        result.Should().BeNull();
     }
 
-    private Task UpdateCheckpointAsync(CheckpointTestData data) =>
-        _repository.UpdateCheckpointAsync(
-            data.Chain, data.Address, data.Provider, data.LastLt, data.LastHash);
+    [Fact]
+    public async Task UpdateCheckpoint_WhenExists_UpdatesCheckpoint()
+    {
+        var data = ObjectMother.Checkpoints.WithConsistentLtAndHash(OldLt).Build();
+        await _repository.UpdateCheckpointMonotonicAsync(
+            data.Chain, data.Address, data.Provider, OldLt, OldHash);
+
+        await _repository.UpdateCheckpointMonotonicAsync(
+            data.Chain, data.Address, data.Provider, NewLt, NewHash);
+
+        var result = await _repository.GetCheckpointAsync(
+            data.Chain, data.Address, data.Provider);
+        result!.LastLt.Should().Be(NewLt);
+        result.LastHash.Should().Be(NewHash);
+    }
+
+    [Fact]
+    public async Task UpdateCheckpoint_WhenNotFound_CreatesCheckpoint()
+    {
+        await _repository.UpdateCheckpointMonotonicAsync(Chain, Address, Provider, NewLt, NewHash);
+
+        var result = await _repository.GetCheckpointAsync(Chain, Address, Provider);
+        result.Should().NotBeNull();
+        result!.LastLt.Should().Be(NewLt);
+        result.LastHash.Should().Be(NewHash);
+    }
 }
