@@ -14,17 +14,17 @@ public sealed class CheckpointRepository(WhaleWireDbContext db) : ICheckpointRep
     {
         var checkpoint = await db.Checkpoints
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => 
-                c.Chain == chain && 
-                c.Address == address && 
+            .FirstOrDefaultAsync(c =>
+                c.Chain == chain &&
+                c.Address == address &&
                 c.Provider == provider, ct);
 
-        return checkpoint is null 
-            ? null 
+        return checkpoint is null
+            ? null
             : new CheckpointData(checkpoint.LastLt, checkpoint.LastHash, checkpoint.UpdatedAt);
     }
 
-    public async Task UpdateCheckpointAsync(
+    public async Task UpdateCheckpointMonotonicAsync(
         string chain,
         string address,
         string provider,
@@ -33,29 +33,19 @@ public sealed class CheckpointRepository(WhaleWireDbContext db) : ICheckpointRep
         CancellationToken ct = default)
     {
         var checkpoint = await db.Checkpoints
-            .FirstOrDefaultAsync(c => 
-                c.Chain == chain && 
-                c.Address == address && 
+            .FirstOrDefaultAsync(c =>
+                c.Chain == chain &&
+                c.Address == address &&
                 c.Provider == provider, ct);
 
         if (checkpoint is null)
         {
-            checkpoint = new Checkpoint
-            {
-                Chain = chain,
-                Address = address,
-                Provider = provider,
-                LastLt = lastLt,
-                LastHash = lastHash,
-                UpdatedAt = DateTime.UtcNow
-            };
+            checkpoint = Checkpoint.Create(chain, address, provider, lastLt, lastHash);
             db.Checkpoints.Add(checkpoint);
         }
         else
         {
-            checkpoint.LastLt = lastLt;
-            checkpoint.LastHash = lastHash;
-            checkpoint.UpdatedAt = DateTime.UtcNow;
+            checkpoint.Update(lastLt, lastHash);
         }
 
         await db.SaveChangesAsync(ct);

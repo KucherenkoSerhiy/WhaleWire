@@ -15,9 +15,10 @@ public interface ICheckpointRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Updates or creates a checkpoint. Should only be called after events are successfully persisted.
+    /// Updates checkpoint monotonically (only advances forward).
+    /// Should only be called after events are successfully persisted.
     /// </summary>
-    Task UpdateCheckpointAsync(
+    Task UpdateCheckpointMonotonicAsync(
         string chain,
         string address,
         string provider,
