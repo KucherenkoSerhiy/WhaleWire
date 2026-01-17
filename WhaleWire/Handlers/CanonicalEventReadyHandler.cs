@@ -1,21 +1,25 @@
-﻿using WhaleWire.Application.Messaging;
+﻿using Microsoft.Extensions.Options;
+using WhaleWire.Application.Messaging;
 using WhaleWire.Application.Persistence;
 using WhaleWire.Messages;
 using Polly;
 using Polly.CircuitBreaker;
+using WhaleWire.Configuration;
 
 namespace WhaleWire.Handlers;
 
 public sealed class CanonicalEventReadyHandler(
     IEventRepository eventRepository,
-    ILogger<CanonicalEventReadyHandler> logger)
+    ICheckpointRepository  checkpointRepository,
+    ILogger<CanonicalEventReadyHandler> logger,
+    IOptions<CircuitBreakerOptions> options)
     : IMessageConsumer<CanonicalEventReady>
 {
-    private static readonly AsyncCircuitBreakerPolicy _circuitBreaker = Policy
+    private readonly AsyncCircuitBreakerPolicy _circuitBreaker = Policy
         .Handle<Exception>()
         .CircuitBreakerAsync(
-            exceptionsAllowedBeforeBreaking: 5,
-            durationOfBreak: TimeSpan.FromMinutes(1));
+            exceptionsAllowedBeforeBreaking: options.Value.ExceptionsAllowedBeforeBreaking,
+            durationOfBreak: TimeSpan.FromMinutes(options.Value.DurationOfBreakMinutes));
 
     public async Task HandleAsync(CanonicalEventReady message, CancellationToken token = default)
     {
@@ -33,6 +37,17 @@ public sealed class CanonicalEventReadyHandler(
                 blockTime: message.OccurredAt,
                 rawJson: message.RawJson,
                 ct: token);
+
+            if (wasInserted)
+            {
+                await checkpointRepository.UpdateCheckpointMonotonicAsync(
+                    message.Chain,
+                    message.Address,
+                    message.Provider,
+                    message.Lt,
+                    message.TxHash,
+                    token);
+            }
 
             logger.LogInformation(
                 wasInserted

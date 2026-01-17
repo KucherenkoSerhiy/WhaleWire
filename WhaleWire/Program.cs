@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using WhaleWire.Application.UseCases;
 using WhaleWire.Configuration;
 using WhaleWire.Handlers;
+using WhaleWire.Infrastructure.Ingestion;
 using WhaleWire.Infrastructure.Messaging;
 using WhaleWire.Infrastructure.Persistence;
 using WhaleWire.Messages;
@@ -12,6 +14,12 @@ var builder = Host.CreateApplicationBuilder(args);
 // Configuration
 builder.Services.Configure<SchedulerOptions>(
     builder.Configuration.GetSection(SchedulerOptions.SectionName));
+builder.Services.Configure<CircuitBreakerOptions>(
+    builder.Configuration.GetSection(CircuitBreakerOptions.SectionName));
+
+// Infrastructure - Ingestion
+builder.Services.AddIngestion();
+builder.Services.AddScoped<IIngestorUseCase, IngestorUseCase>();
 
 // Infrastructure - Persistence
 var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres") 
