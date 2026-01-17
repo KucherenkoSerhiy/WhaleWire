@@ -16,6 +16,7 @@ public static class DependencyInjection
 
             services.AddScoped<IEventRepository, EventRepository>();
             services.AddScoped<ICheckpointRepository, CheckpointRepository>();
+            services.AddSingleton(TimeProvider.System);
             services.AddScoped<ILeaseRepository, LeaseRepository>();
 
             return services;

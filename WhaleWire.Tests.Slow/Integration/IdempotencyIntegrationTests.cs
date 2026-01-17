@@ -24,6 +24,7 @@ public class IdempotencyIntegrationTests(WhaleWireIntegrationFixture fixture)
         {
             EventId = $"integration-test-{Guid.NewGuid()}",
             Chain = "ton-testnet",
+            Provider = "ton-test-provider",
             Address = "EQIntegrationTest",
             Lt = 999,
             TxHash = "integration-hash",

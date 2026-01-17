@@ -4,7 +4,8 @@ using WhaleWire.Infrastructure.Persistence.Entities;
 
 namespace WhaleWire.Infrastructure.Persistence.Repositories;
 
-public sealed class EventRepository(WhaleWireDbContext db) : IEventRepository
+public sealed class EventRepository(
+    WhaleWireDbContext db, TimeProvider timeProvider) : IEventRepository
 {
     public async Task<bool> UpsertEventIdempotentAsync(
         string eventId,
@@ -29,7 +30,7 @@ public sealed class EventRepository(WhaleWireDbContext db) : IEventRepository
             TxHash = txHash,
             BlockTime = blockTime,
             RawJson = rawJson,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = timeProvider.GetUtcNow().UtcDateTime
         };
 
         db.Events.Add(entity);

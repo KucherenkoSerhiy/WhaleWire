@@ -26,7 +26,7 @@ public class CheckpointFlowTests(WhaleWireIntegrationFixture fixture)
         inserted.Should().BeTrue();
 
         // Act - update checkpoint
-        await checkpointRepo.UpdateCheckpointAsync("ton", "EQCheckpoint", "test", 100, "hash100");
+        await checkpointRepo.UpdateCheckpointMonotonicAsync("ton", "EQCheckpoint", "test", 100, "hash100");
         
         // Assert - checkpoint updated
         var checkpoint = await checkpointRepo.GetCheckpointAsync("ton", "EQCheckpoint", "test");

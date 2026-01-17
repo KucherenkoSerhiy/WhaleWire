@@ -8,13 +8,12 @@ namespace WhaleWire.Tests.Unit.Repositories;
 
 public sealed class LeaseRepositoryTests : InMemoryDbContextFixture
 {
+    private readonly FakeTimeProvider _timeProvider = new();
     private readonly LeaseRepository _repository;
-    private readonly FakeTimeProvider _timeProvider;
 
     public LeaseRepositoryTests()
     {
-        _timeProvider = new FakeTimeProvider();
-        _repository = new LeaseRepository(Context);
+        _repository = new LeaseRepository(Context, _timeProvider);
     }
 
     [Fact]

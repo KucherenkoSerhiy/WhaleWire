@@ -4,7 +4,9 @@ using WhaleWire.Infrastructure.Persistence.Entities;
 
 namespace WhaleWire.Infrastructure.Persistence.Repositories;
 
-public sealed class LeaseRepository(WhaleWireDbContext db) : ILeaseRepository
+public sealed class LeaseRepository(
+    WhaleWireDbContext db,
+    TimeProvider timeProvider) : ILeaseRepository
 {
     public async Task<bool> TryAcquireLeaseAsync(
         string leaseKey,
@@ -12,54 +14,45 @@ public sealed class LeaseRepository(WhaleWireDbContext db) : ILeaseRepository
         TimeSpan duration,
         CancellationToken ct = default)
     {
-        var now = DateTime.UtcNow;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
         var expiresAt = now + duration;
 
         var lease = await db.AddressLeases.FirstOrDefaultAsync(l => l.LeaseKey == leaseKey, ct);
 
         if (lease is null)
         {
-            // No lease exists, create one
-            lease = new AddressLease
-            {
-                LeaseKey = leaseKey,
-                OwnerId = ownerId,
-                ExpiresAt = expiresAt
-            };
-            db.AddressLeases.Add(lease);
-
-            try
-            {
-                await db.SaveChangesAsync(ct);
-                return true;
-            }
-            catch (DbUpdateException ex) when (IsUniqueViolation(ex))
-            {
-                // Another process acquired the lease concurrently
-                return false;
-            }
+            return await AcquireNewLeaseAsync(leaseKey, ownerId, ct, expiresAt);
         }
 
-        // Lease exists - check if expired or owned by us
-        if (lease.ExpiresAt <= now)
+        if (lease.IsHeldByAnotherOwner(now, ownerId))
+            return false;
+
+        lease.Renew(ownerId, expiresAt);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private async Task<bool> AcquireNewLeaseAsync(string leaseKey, string ownerId, CancellationToken ct,
+        DateTime expiresAt)
+    {
+        var lease = new AddressLease
         {
-            // Expired, take it over
-            lease.OwnerId = ownerId;
-            lease.ExpiresAt = expiresAt;
+            LeaseKey = leaseKey,
+            OwnerId = ownerId,
+            ExpiresAt = expiresAt
+        };
+        db.AddressLeases.Add(lease);
+
+        try
+        {
             await db.SaveChangesAsync(ct);
             return true;
         }
-
-        if (lease.OwnerId == ownerId)
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
-            // Already ours, extend it
-            lease.ExpiresAt = expiresAt;
-            await db.SaveChangesAsync(ct);
-            return true;
+            // Another process acquired the lease concurrently
+            return false;
         }
-
-        // Held by another owner
-        return false;
     }
 
     public async Task<bool> RenewLeaseAsync(
@@ -69,11 +62,11 @@ public sealed class LeaseRepository(WhaleWireDbContext db) : ILeaseRepository
         CancellationToken ct = default)
     {
         var lease = await db.AddressLeases.FirstOrDefaultAsync(l => l.LeaseKey == leaseKey, ct);
-
-        if (lease is null || lease.OwnerId != ownerId)
+        if (lease is null || !lease.BelongsTo(ownerId))
             return false;
 
-        lease.ExpiresAt = DateTime.UtcNow + duration;
+        var newExpirationTime = timeProvider.GetUtcNow().UtcDateTime + duration;
+        lease.ExpiresAt = newExpirationTime;
         await db.SaveChangesAsync(ct);
         return true;
     }
@@ -84,8 +77,7 @@ public sealed class LeaseRepository(WhaleWireDbContext db) : ILeaseRepository
         CancellationToken ct = default)
     {
         var lease = await db.AddressLeases.FirstOrDefaultAsync(l => l.LeaseKey == leaseKey, ct);
-
-        if (lease is null || lease.OwnerId != ownerId)
+        if (lease is null || !lease.BelongsTo(ownerId))
             return false;
 
         db.AddressLeases.Remove(lease);

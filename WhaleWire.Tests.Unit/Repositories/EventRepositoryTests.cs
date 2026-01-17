@@ -1,5 +1,6 @@
 ﻿using AutoFixture;
 using FluentAssertions;
+using Microsoft.Extensions.Time.Testing;
 using WhaleWire.Infrastructure.Persistence.Repositories;
 using WhaleWire.Tests.Common.Builders;
 using WhaleWire.Tests.Common.Fixtures;
@@ -10,10 +11,11 @@ public sealed class EventRepositoryTests : InMemoryDbContextFixture
 {
     private readonly EventRepository _repository;
     private readonly Fixture _fixture = new();
+    private readonly FakeTimeProvider _fakeTimeProvider = new();
 
     public EventRepositoryTests()
     {
-        _repository = new EventRepository(Context);
+        _repository = new EventRepository(Context, _fakeTimeProvider);
     }
 
     [Fact]
