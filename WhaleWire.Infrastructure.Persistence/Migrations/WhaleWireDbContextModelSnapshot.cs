@@ -148,6 +148,54 @@ namespace WhaleWire.Infrastructure.Persistence.Migrations
 
                     b.ToTable("checkpoints", (string)null);
                 });
+
+            modelBuilder.Entity("WhaleWire.Infrastructure.Persistence.Entities.MonitoredAddress", b =>
+                {
+                    b.Property<string>("Chain")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("chain");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("address");
+
+                    b.Property<string>("Provider")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("provider");
+
+                    b.Property<long>("Balance")
+                        .HasColumnType("bigint")
+                        .HasColumnName("balance");
+
+                    b.Property<DateTime>("DiscoveredAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("discovered_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Chain", "Address", "Provider");
+
+                    b.HasIndex("Balance");
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("monitored_addresses", (string)null);
+                });
 #pragma warning restore 612, 618
         }
     }
