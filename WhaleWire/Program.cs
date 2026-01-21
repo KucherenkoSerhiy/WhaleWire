@@ -19,7 +19,11 @@ builder.Services.Configure<CircuitBreakerOptions>(
 
 // Infrastructure - Ingestion
 builder.Services.AddIngestion();
+
+// Application - Use Cases
 builder.Services.AddScoped<IIngestorUseCase, IngestorUseCase>();
+builder.Services.AddScoped<IDiscoveryUseCase, DiscoveryUseCase>();
+builder.Services.AddScoped<IIngestionCoordinatorUseCase, IngestionCoordinatorUseCase>();
 
 // Infrastructure - Persistence
 var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres") 

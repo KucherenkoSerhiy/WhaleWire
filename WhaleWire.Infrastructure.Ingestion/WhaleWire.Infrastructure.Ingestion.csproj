@@ -9,9 +9,11 @@
     <ItemGroup>
       <ProjectReference Include="..\WhaleWire.Application\WhaleWire.Application.csproj" />
       <ProjectReference Include="..\WhaleWire.Domain\WhaleWire.Domain.csproj" />
+      <ProjectReference Include="..\WhaleWire.Messages\WhaleWire.Messages.csproj" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
       <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
       <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.1" />
