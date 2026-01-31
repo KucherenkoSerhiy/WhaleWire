@@ -1,9 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using WhaleWire.Application.Blockchain;
+using WhaleWire.Application.Messaging;
+using WhaleWire.Application.Persistence;
 using WhaleWire.Application.UseCases;
 using WhaleWire.Configuration;
 using WhaleWire.Handlers;
 using WhaleWire.Infrastructure.Ingestion;
+using WhaleWire.Infrastructure.Ingestion.Configuration;
 using WhaleWire.Infrastructure.Messaging;
 using WhaleWire.Infrastructure.Persistence;
 using WhaleWire.Messages;
@@ -18,10 +22,19 @@ builder.Services.Configure<CircuitBreakerOptions>(
     builder.Configuration.GetSection(CircuitBreakerOptions.SectionName));
 
 // Infrastructure - Ingestion
-builder.Services.AddIngestion();
+builder.Services.AddIngestion(builder.Configuration);
 
 // Application - Use Cases
-builder.Services.AddScoped<IIngestorUseCase, IngestorUseCase>();
+builder.Services.AddScoped<IIngestorUseCase>(sp =>
+{
+    var tonApiOptions = sp.GetRequiredService<IOptions<TonApiOptions>>().Value;
+    return new IngestorUseCase(
+        sp.GetRequiredService<IBlockchainClient>(),
+        sp.GetRequiredService<ILeaseRepository>(),
+        sp.GetRequiredService<ICheckpointRepository>(),
+        sp.GetRequiredService<IMessagePublisher>(),
+        tonApiOptions.DelayBetweenRequestsMs);
+});
 builder.Services.AddScoped<IDiscoveryUseCase, DiscoveryUseCase>();
 builder.Services.AddScoped<IIngestionCoordinatorUseCase, IngestionCoordinatorUseCase>();
 

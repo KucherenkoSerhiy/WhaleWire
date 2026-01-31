@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WhaleWire.Application.Blockchain;
 using WhaleWire.Application.UseCases;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         {
             var options = sp.GetRequiredService<IOptions<TonApiOptions>>().Value;
             client.BaseAddress = new Uri(options.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
             
             if (!string.IsNullOrEmpty(options.ApiKey))
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {options.ApiKey}");
@@ -61,8 +63,13 @@ public static class DependencyInjection
             if (!string.IsNullOrEmpty(options.ApiKey))
                 client.DefaultRequestHeaders.Add("X-API-Key", options.ApiKey);
         });
-        services.AddTransient<IAssetTopHoldersProvider>(sp => 
-            sp.GetRequiredService<TonNativeTopHoldersProvider>());
+        services.AddTransient<IAssetTopHoldersProvider>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var logger = sp.GetRequiredService<ILogger<TonNativeTopHoldersProvider>>();
+            var client = httpClientFactory.CreateClient(nameof(TonNativeTopHoldersProvider));
+            return new TonNativeTopHoldersProvider(client, logger);
+        });
 
         // Register jetton providers from config
         var tonCenterOptions = configuration
@@ -79,6 +86,7 @@ public static class DependencyInjection
                 {
                     var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
                     var options = sp.GetRequiredService<IOptions<TonCenterOptions>>().Value;
+                    var logger = sp.GetRequiredService<ILogger<JettonTopHoldersProvider>>();
                     
                     var client = httpClientFactory.CreateClient($"TonCenter-{jetton.Symbol}");
                     client.BaseAddress = new Uri(options.BaseUrl);
@@ -86,7 +94,7 @@ public static class DependencyInjection
                     if (!string.IsNullOrEmpty(options.ApiKey))
                         client.DefaultRequestHeaders.Add("X-API-Key", options.ApiKey);
                     
-                    return new JettonTopHoldersProvider(client, jetton.MasterAddress, jetton.Symbol);
+                    return new JettonTopHoldersProvider(client, jetton.MasterAddress, jetton.Symbol, logger);
                 });
             }
         }

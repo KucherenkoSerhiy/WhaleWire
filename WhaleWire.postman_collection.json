@@ -1,0 +1,115 @@
+{
+  "info": {
+    "name": "WhaleWire - TON APIs",
+    "description": "Test collection for TonAPI and Chainstack endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TonAPI",
+      "item": [
+        {
+          "name": "Get Account Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{tonapi_url}}/v2/blockchain/accounts/{{test_address}}/transactions?limit={{limit}}",
+              "host": ["{{tonapi_url}}"],
+              "path": ["v2", "blockchain", "accounts", "{{test_address}}", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "description": "Number of transactions to fetch"
+                },
+                {
+                  "key": "after_lt",
+                  "value": "",
+                  "description": "Logical time to fetch after (for pagination)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Fetch transactions for an address. Used by TonApiClient."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{tonapi_url}}/v2/accounts/{{test_address}}",
+              "host": ["{{tonapi_url}}"],
+              "path": ["v2", "accounts", "{{test_address}}"]
+            },
+            "description": "Get account details including balance"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chainstack",
+      "item": [
+        {
+          "name": "Get Top Accounts By Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{chainstack_url}}/api/v3/topAccountsByBalance?limit={{discovery_limit}}",
+              "host": ["{{chainstack_url}}"],
+              "path": ["api", "v3", "topAccountsByBalance"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{discovery_limit}}",
+                  "description": "Number of top accounts to return"
+                },
+                {
+                  "key": "offset",
+                  "value": "",
+                  "description": "Pagination offset",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get top N accounts by balance. Used by ChainstackTopAccountsClient."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "tonapi_url",
+      "value": "https://tonapi.io",
+      "type": "string"
+    },
+    {
+      "key": "chainstack_url",
+      "value": "https://ton-mainnet.core.chainstack.com",
+      "type": "string"
+    },
+    {
+      "key": "test_address",
+      "value": "EQAvDfWFG0oYX19jwNDNBBL1rKNT9XfaGP9HyTb5nb2Eml6y",
+      "type": "string",
+      "description": "Test whale address"
+    },
+    {
+      "key": "limit",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "discovery_limit",
+      "value": "100",
+      "type": "string"
+    }
+  ]
+}

@@ -4,7 +4,7 @@ services:
     container_name: whalewire-postgres
     environment:
       POSTGRES_USER: whalewire
-      POSTGRES_PASSWORD: whalewire_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: whalewire
     ports:
       - "5432:5432"
@@ -21,7 +21,7 @@ services:
     container_name: whalewire-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: whalewire
-      RABBITMQ_DEFAULT_PASS: whalewire_dev
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -42,8 +42,13 @@ services:
       - "5007:8080"
     environment:
       - DOTNET_ENVIRONMENT=Development
-      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=whalewire;Username=whalewire;Password=whalewire_dev
-      - ConnectionStrings__RabbitMQ=amqp://whalewire:whalewire_dev@rabbitmq:5672
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=whalewire;Username=whalewire;Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__RabbitMQ=amqp://whalewire:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - TonApi__ApiKey=${TONAPI_API_KEY:-}
+      - TonCenter__BaseUrl=https://toncenter.com
+      - TonCenter__ApiKey=${TONCENTER_API_KEY:-}
+      - Discovery__PollingIntervalMinutes=60
+      - Discovery__TopAccountsLimit=100
     depends_on:
       postgres:
         condition: service_healthy
