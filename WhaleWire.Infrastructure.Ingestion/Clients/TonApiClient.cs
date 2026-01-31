@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using WhaleWire.Application.Blockchain;
 using WhaleWire.Domain;
@@ -59,10 +59,21 @@ public sealed class TonApiClient(
 
         if (result?.Transactions == null) return [];
         
+        var sanitizedJson = SanitizeJson(json);
         foreach (var transaction in result.Transactions)
         {
-            transaction.RawJson = json;
+            transaction.RawJson = sanitizedJson;
         }
         return result.Transactions;
+    }
+
+    private static string SanitizeJson(string json)
+    {
+        // Remove null bytes and control characters that Postgres can't handle
+        return json
+            .Replace("\\u0000", "")
+            .Replace("\u0000", "")
+            .Replace("\\u0001", "")
+            .Replace("\u0001", "");
     }
 }

@@ -1,4 +1,4 @@
-﻿using WhaleWire.Application.Blockchain;
+using WhaleWire.Application.Blockchain;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Application.Persistence;
 using WhaleWire.Domain;
@@ -10,7 +10,8 @@ public sealed class IngestorUseCase(
     IBlockchainClient blockchainClient,
     ILeaseRepository leaseRepository,
     ICheckpointRepository checkpointRepository,
-    IMessagePublisher messagePublisher) : IIngestorUseCase
+    IMessagePublisher messagePublisher,
+    int delayBetweenRequestsMs) : IIngestorUseCase
 {
     private const string OwnerId = "ingestor";
 
@@ -35,6 +36,8 @@ public sealed class IngestorUseCase(
 
             var events = await blockchainClient.GetEventsAsync(address, cursor, limit: 100, token);
             
+            await LimitRate(token);
+            
             foreach (var evt in events)
             {
                 await messagePublisher.PublishAsync(evt, token);
@@ -46,5 +49,10 @@ public sealed class IngestorUseCase(
         {
             await leaseRepository.ReleaseLeaseAsync(leaseKey, OwnerId, token);
         }
+    }
+
+    private async Task LimitRate(CancellationToken token)
+    {
+        await Task.Delay(delayBetweenRequestsMs, token);
     }
 }
