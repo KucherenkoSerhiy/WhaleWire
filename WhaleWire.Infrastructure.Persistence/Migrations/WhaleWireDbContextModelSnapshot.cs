@@ -166,8 +166,9 @@ namespace WhaleWire.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("provider");
 
-                    b.Property<long>("Balance")
-                        .HasColumnType("bigint")
+                    b.Property<string>("Balance")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("balance");
 
                     b.Property<DateTime>("DiscoveredAt")
