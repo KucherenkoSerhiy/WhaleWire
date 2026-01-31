@@ -22,13 +22,15 @@ public sealed class IngestorUseCaseTests
     private readonly ICheckpointRepository _checkpointRepository = Substitute.For<ICheckpointRepository>();
     private readonly IMessagePublisher _messagePublisher = Substitute.For<IMessagePublisher>();
     private readonly IngestorUseCase _useCase;
+    private readonly int _testDelayBetweenRequestsMs = 0;
 
     public IngestorUseCaseTests()
     {
         _blockchainClient.Chain.Returns(Chain);
         _blockchainClient.Provider.Returns(Provider);
         _useCase = new IngestorUseCase(
-            _blockchainClient, _leaseRepository, _checkpointRepository, _messagePublisher);
+            _blockchainClient, _leaseRepository, _checkpointRepository, _messagePublisher, 
+            delayBetweenRequestsMs: _testDelayBetweenRequestsMs);
     }
 
     [Fact]

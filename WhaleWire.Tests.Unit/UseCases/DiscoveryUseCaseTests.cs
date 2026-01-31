@@ -40,11 +40,11 @@ public sealed class DiscoveryUseCaseTests
 
         count.Should().Be(3);
         await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr1", Provider, 5000, Arg.Any<CancellationToken>());
+            Chain, "addr1", Provider, "5000", Arg.Any<CancellationToken>());
         await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr2", Provider, 3000, Arg.Any<CancellationToken>());
+            Chain, "addr2", Provider, "3000", Arg.Any<CancellationToken>());
         await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr3", Provider, 1000, Arg.Any<CancellationToken>());
+            Chain, "addr3", Provider, "1000", Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class DiscoveryUseCaseTests
 
         count.Should().Be(0);
         await _monitoredAddressRepo.DidNotReceive().UpsertAddressAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<long>(), Arg.Any<CancellationToken>());
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -70,6 +70,6 @@ public sealed class DiscoveryUseCaseTests
         await _useCase.ExecuteAsync(Limit);
 
         await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr1", Provider, 1000, Arg.Any<CancellationToken>());
+            Chain, "addr1", Provider, Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 }
