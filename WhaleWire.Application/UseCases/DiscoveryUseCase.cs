@@ -1,3 +1,4 @@
+using System.Numerics;
 using WhaleWire.Application.Blockchain;
 using WhaleWire.Application.Persistence;
 
@@ -18,7 +19,7 @@ public sealed class DiscoveryUseCase(
                 chain: blockchainClient.Chain,
                 address: account.Address,
                 provider: blockchainClient.Provider,
-                balance: account.Balance,
+                balance: account.Balance.ToString(),
                 ct: ct);
         }
 
@@ -33,7 +34,7 @@ public interface ITopAccountsClient
         CancellationToken ct = default);
 }
 
-public sealed record TopAccount(string Address, long Balance);
+public sealed record TopAccount(string Address, BigInteger Balance);
 
 public sealed class DiscoveryOptions
 {
@@ -41,5 +42,5 @@ public sealed class DiscoveryOptions
 
     public bool Enabled { get; init; } = true;
     public int PollingIntervalMinutes { get; init; } = 60;
-    public int TopAccountsLimit { get; init; } = 1000;
+    public int TopAccountsLimit { get; init; } = 100;
 }
