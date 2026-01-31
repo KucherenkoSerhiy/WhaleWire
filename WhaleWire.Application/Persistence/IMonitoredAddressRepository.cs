@@ -11,7 +11,7 @@ public interface IMonitoredAddressRepository
         string chain,
         string address,
         string provider,
-        long balance,
+        string balance,
         CancellationToken ct = default);
 
     Task DeactivateAddressAsync(

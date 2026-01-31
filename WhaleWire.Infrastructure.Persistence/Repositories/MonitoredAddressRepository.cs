@@ -22,7 +22,7 @@ public sealed class MonitoredAddressRepository(WhaleWireDbContext db) : IMonitor
         string chain,
         string address,
         string provider,
-        long balance,
+        string balance,
         CancellationToken ct = default)
     {
         var monitored = await GetMonitoredAddressAsync(chain, address, provider, ct);
