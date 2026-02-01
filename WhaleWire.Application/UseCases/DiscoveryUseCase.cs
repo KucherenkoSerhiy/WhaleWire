@@ -11,30 +11,34 @@ public sealed class DiscoveryUseCase(
 {
     public async Task<int> ExecuteAsync(int limit, CancellationToken ct = default)
     {
-        var accounts = await topAccountsClient.GetTopAccountsByBalanceAsync(limit, ct);
+        var assetHolders = await topAccountsClient.GetTopAccountsByAssetAsync(limit, ct);
 
-        foreach (var account in accounts)
+        var totalAddresses = 0;
+        foreach (var asset in assetHolders)
         {
-            await monitoredAddressRepository.UpsertAddressAsync(
-                chain: blockchainClient.Chain,
-                address: account.Address,
-                provider: blockchainClient.Provider,
-                balance: account.Balance.ToString(),
-                ct: ct);
+            foreach (var holder in asset.Holders)
+            {
+                await monitoredAddressRepository.UpsertAddressAsync(
+                    chain: blockchainClient.Chain,
+                    address: holder.Address,
+                    provider: blockchainClient.Provider,
+                    assetId: asset.AssetIdentifier,
+                    balance: holder.Balance.ToString(),
+                    ct: ct);
+                totalAddresses++;
+            }
         }
 
-        return accounts.Count;
+        return totalAddresses;
     }
 }
 
 public interface ITopAccountsClient
 {
-    Task<IReadOnlyList<TopAccount>> GetTopAccountsByBalanceAsync(
+    Task<IReadOnlyList<AssetTopHolders>> GetTopAccountsByAssetAsync(
         int limit,
         CancellationToken ct = default);
 }
-
-public sealed record TopAccount(string Address, BigInteger Balance);
 
 public sealed class DiscoveryOptions
 {

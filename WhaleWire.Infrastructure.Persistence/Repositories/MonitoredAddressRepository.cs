@@ -13,8 +13,8 @@ public sealed class MonitoredAddressRepository(WhaleWireDbContext db) : IMonitor
     {
         return await db.MonitoredAddresses
             .Where(m => m.Chain == chain && m.Provider == provider && m.IsActive)
-            .OrderByDescending(m => m.Balance)
-            .Select(m => m.Address)
+            .GroupBy(m => m.Address)
+            .Select(g => g.Key)
             .ToListAsync(ct);
     }
 
@@ -22,10 +22,16 @@ public sealed class MonitoredAddressRepository(WhaleWireDbContext db) : IMonitor
         string chain,
         string address,
         string provider,
+        string assetId,
         string balance,
         CancellationToken ct = default)
     {
-        var monitored = await GetMonitoredAddressAsync(chain, address, provider, ct);
+        var monitored = await db.MonitoredAddresses
+            .FirstOrDefaultAsync(m =>
+                m.Chain == chain &&
+                m.Address == address &&
+                m.Provider == provider &&
+                m.AssetId == assetId, ct);
 
         if (monitored is null)
         {
@@ -34,6 +40,7 @@ public sealed class MonitoredAddressRepository(WhaleWireDbContext db) : IMonitor
                 Chain = chain,
                 Address = address,
                 Provider = provider,
+                AssetId = assetId,
                 Balance = balance,
                 IsActive = true,
                 DiscoveredAt = DateTime.UtcNow,
@@ -55,9 +62,15 @@ public sealed class MonitoredAddressRepository(WhaleWireDbContext db) : IMonitor
         string chain,
         string address,
         string provider,
+        string assetId,
         CancellationToken ct = default)
     {
-        var monitored = await GetMonitoredAddressAsync(chain, address, provider, ct);
+        var monitored = await db.MonitoredAddresses
+            .FirstOrDefaultAsync(m =>
+                m.Chain == chain &&
+                m.Address == address &&
+                m.Provider == provider &&
+                m.AssetId == assetId, ct);
 
         if (monitored is not null)
         {
@@ -65,14 +78,5 @@ public sealed class MonitoredAddressRepository(WhaleWireDbContext db) : IMonitor
             monitored.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
         }
-    }
-
-    private async Task<MonitoredAddress?> GetMonitoredAddressAsync(string chain, string address, string provider, CancellationToken ct)
-    {
-        return await db.MonitoredAddresses
-            .FirstOrDefaultAsync(m =>
-                m.Chain == chain &&
-                m.Address == address &&
-                m.Provider == provider, ct);
     }
 }

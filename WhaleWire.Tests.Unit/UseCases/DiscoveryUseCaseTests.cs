@@ -27,49 +27,52 @@ public sealed class DiscoveryUseCaseTests
     [Fact]
     public async Task ExecuteAsync_WithTopAccounts_UpsertAllAddresses()
     {
-        var accounts = new List<TopAccount>
+        var assetHolders = new List<AssetTopHolders>
         {
-            new("addr1", 5000),
-            new("addr2", 3000),
-            new("addr3", 1000)
+            new("TON", "native", new[]
+            {
+                new WalletHolder("addr1", 5000),
+                new WalletHolder("addr2", 3000)
+            })
         };
-        _topAccountsClient.GetTopAccountsByBalanceAsync(Limit, Arg.Any<CancellationToken>())
-            .Returns(accounts);
+        _topAccountsClient.GetTopAccountsByAssetAsync(Limit, Arg.Any<CancellationToken>())
+            .Returns(assetHolders);
 
         var count = await _useCase.ExecuteAsync(Limit);
 
-        count.Should().Be(3);
+        count.Should().Be(2);
         await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr1", Provider, "5000", Arg.Any<CancellationToken>());
+            Chain, "addr1", Provider, "TON", "5000", Arg.Any<CancellationToken>());
         await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr2", Provider, "3000", Arg.Any<CancellationToken>());
-        await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr3", Provider, "1000", Arg.Any<CancellationToken>());
+            Chain, "addr2", Provider, "TON", "3000", Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ExecuteAsync_WhenNoAccounts_ReturnsZero()
     {
-        _topAccountsClient.GetTopAccountsByBalanceAsync(Limit, Arg.Any<CancellationToken>())
-            .Returns(new List<TopAccount>());
+        _topAccountsClient.GetTopAccountsByAssetAsync(Limit, Arg.Any<CancellationToken>())
+            .Returns(new List<AssetTopHolders>());
 
         var count = await _useCase.ExecuteAsync(Limit);
 
         count.Should().Be(0);
         await _monitoredAddressRepo.DidNotReceive().UpsertAddressAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ExecuteAsync_UsesBlockchainClientMetadata()
     {
-        var accounts = new List<TopAccount> { new("addr1", 1000) };
-        _topAccountsClient.GetTopAccountsByBalanceAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(accounts);
+        var assetHolders = new List<AssetTopHolders>
+        {
+            new("TON", "native", [new WalletHolder("addr1", 1000)])
+        };
+        _topAccountsClient.GetTopAccountsByAssetAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(assetHolders);
 
         await _useCase.ExecuteAsync(Limit);
 
         await _monitoredAddressRepo.Received(1).UpsertAddressAsync(
-            Chain, "addr1", Provider, Arg.Any<string>(), Arg.Any<CancellationToken>());
+            Chain, "addr1", Provider, "TON", Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 }

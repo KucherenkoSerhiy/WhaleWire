@@ -13,11 +13,11 @@ public sealed class CompositeTopAccountsClient(
     ILogger<CompositeTopAccountsClient> logger) : ITopAccountsClient
 {
     private readonly int _delayMs = tonCenterOptions.Value.DelayBetweenRequestsMs;
-    public async Task<IReadOnlyList<TopAccount>> GetTopAccountsByBalanceAsync(
+    public async Task<IReadOnlyList<AssetTopHolders>> GetTopAccountsByAssetAsync(
         int limit,
         CancellationToken ct = default)
     {
-        var allAddresses = new Dictionary<string, BigInteger>();
+        var results = new List<AssetTopHolders>();
         var successCount = 0;
         var failCount = 0;
 
@@ -39,18 +39,7 @@ public sealed class CompositeTopAccountsClient(
                     "Fetched {Count} holders for asset {Asset} ({Type})",
                     assetHolders.Holders.Count, assetHolders.AssetIdentifier, assetHolders.AssetType);
 
-                foreach (var holder in assetHolders.Holders)
-                {
-                    if (!allAddresses.ContainsKey(holder.Address))
-                    {
-                        allAddresses[holder.Address] = holder.Balance;
-                    }
-                    else
-                    {
-                        allAddresses[holder.Address] = BigInteger.Max(
-                            allAddresses[holder.Address], holder.Balance);
-                    }
-                }
+                results.Add(assetHolders);
             }
             catch (Exception ex)
             {
@@ -62,18 +51,16 @@ public sealed class CompositeTopAccountsClient(
             }
         }
 
+        var totalHolders = results.Sum(r => r.Holders.Count);
         logger.LogInformation(
-            "Discovery complete: {Success} providers succeeded, {Fail} failed, {Total} unique addresses",
-            successCount, failCount, allAddresses.Count);
+            "Discovery complete: {Success} providers succeeded, {Fail} failed, {Total} total holders",
+            successCount, failCount, totalHolders);
 
-        if (allAddresses.Count == 0 && failCount > 0)
+        if (results.Count == 0 && failCount > 0)
         {
             throw new InvalidOperationException("All asset providers failed");
         }
 
-        return allAddresses
-            .Select(kvp => new TopAccount(kvp.Key, kvp.Value))
-            .OrderByDescending(a => a.Balance)
-            .ToList();
+        return results;
     }
 }

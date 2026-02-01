@@ -10,7 +10,7 @@ internal sealed class MonitoredAddressConfiguration : IEntityTypeConfiguration<M
     {
         builder.ToTable("monitored_addresses");
 
-        builder.HasKey(m => new { m.Chain, m.Address, m.Provider });
+        builder.HasKey(m => new { m.Chain, m.Address, m.Provider, m.AssetId });
 
         builder.Property(m => m.Chain)
             .HasColumnName("chain")
@@ -25,6 +25,11 @@ internal sealed class MonitoredAddressConfiguration : IEntityTypeConfiguration<M
         builder.Property(m => m.Provider)
             .HasColumnName("provider")
             .HasMaxLength(64)
+            .IsRequired();
+
+        builder.Property(m => m.AssetId)
+            .HasColumnName("asset_id")
+            .HasMaxLength(128)
             .IsRequired();
 
         builder.Property(m => m.Balance)

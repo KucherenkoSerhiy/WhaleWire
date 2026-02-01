@@ -11,6 +11,7 @@ public interface IMonitoredAddressRepository
         string chain,
         string address,
         string provider,
+        string assetId,
         string balance,
         CancellationToken ct = default);
 
@@ -18,5 +19,6 @@ public interface IMonitoredAddressRepository
         string chain,
         string address,
         string provider,
+        string assetId,
         CancellationToken ct = default);
 }
