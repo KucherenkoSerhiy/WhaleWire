@@ -1,3 +1,5 @@
+-- To run locally on Windows: Get-Content queries.sql | docker exec -i whalewire-postgres psql -U whalewire -d whalewire
+
 -- WhaleWire Diagnostic Queries
 -- Run with: docker exec -it whalewire-postgres psql -U whalewire -d whalewire -f queries.sql
 
@@ -25,12 +27,18 @@ HAVING COUNT(DISTINCT asset_id) > 1
 ORDER BY asset_count DESC
 LIMIT 10;
 
--- Top balances per asset
-SELECT asset_id, address, LEFT(balance, 25) as balance
-FROM monitored_addresses
-WHERE is_active = true
-ORDER BY asset_id, LENGTH(balance) DESC, balance DESC
-LIMIT 15;
+-- Top 5 balances PER asset (window function)
+SELECT * FROM (
+    SELECT 
+        asset_id,
+        LEFT(address, 45) as wallet,
+        LEFT(balance, 25) as balance,
+        ROW_NUMBER() OVER (PARTITION BY asset_id ORDER BY LENGTH(balance) DESC, balance DESC) as rank
+    FROM monitored_addresses
+    WHERE is_active = true
+) ranked
+WHERE rank <= 5
+ORDER BY asset_id, rank;
 
 \echo '\n===== INGESTION PROGRESS ====='
 
@@ -42,6 +50,9 @@ SELECT
     MIN(created_at) as first_event,
     MAX(created_at) as last_event
 FROM events;
+
+-- NOTE: Events don't have asset_id yet (Chapter 9)
+-- For now, all events are TON transactions (native + jettons mixed)
 
 -- Events per address (top 10)
 SELECT address, COUNT(*) as event_count
@@ -107,6 +118,20 @@ SELECT
 FROM monitored_addresses
 WHERE is_active = true
 GROUP BY asset_id;
+
+-- Check for over-limit (should be <= 100 per asset)
+\echo '\n===== DISCOVERY LIMITS CHECK ====='
+SELECT 
+    asset_id,
+    COUNT(*) as count,
+    CASE 
+        WHEN COUNT(*) > 100 THEN '⚠️ Over limit'
+        ELSE '✓ OK'
+    END as status
+FROM monitored_addresses
+WHERE is_active = true
+GROUP BY asset_id
+ORDER BY count DESC;
 
 \echo '\n===== SUMMARY ====='
 
