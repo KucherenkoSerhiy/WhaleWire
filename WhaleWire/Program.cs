@@ -9,6 +9,7 @@ using WhaleWire.Handlers;
 using WhaleWire.Infrastructure.Ingestion;
 using WhaleWire.Infrastructure.Ingestion.Configuration;
 using WhaleWire.Infrastructure.Messaging;
+using WhaleWire.Infrastructure.Notifications;
 using WhaleWire.Infrastructure.Persistence;
 using WhaleWire.Messages;
 using WhaleWire.Services;
@@ -47,6 +48,9 @@ builder.Services.AddPersistence(postgresConnectionString);
 var rabbitMqConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")
     ?? throw new InvalidOperationException("RabbitMQ connection string is required");
 builder.Services.AddMessaging(builder.Configuration, rabbitMqConnectionString);
+
+// Infrastructure - Notifications
+builder.Services.AddNotifications();
 
 // Message consumers
 builder.Services.AddMessageConsumer<BlockchainEvent, BlockchainEventHandler>();

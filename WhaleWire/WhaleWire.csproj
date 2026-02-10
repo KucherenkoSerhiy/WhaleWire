@@ -28,6 +28,7 @@
       <ProjectReference Include="..\WhaleWire.Infrastructure.Messaging\WhaleWire.Infrastructure.Messaging.csproj" />
       <ProjectReference Include="..\WhaleWire.Infrastructure.Persistence\WhaleWire.Infrastructure.Persistence.csproj" />
       <ProjectReference Include="..\WhaleWire.Messages\WhaleWire.Messages.csproj" />
+      <ProjectReference Include="..\WhaleWire.Infrastructure.Notifications\WhaleWire.Infrastructure.Notifications.csproj" />
     </ItemGroup>
 
 </Project>

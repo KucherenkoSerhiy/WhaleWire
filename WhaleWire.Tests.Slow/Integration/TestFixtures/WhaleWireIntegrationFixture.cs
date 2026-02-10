@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
 using WhaleWire.Infrastructure.Messaging;
+using WhaleWire.Infrastructure.Notifications;
 using WhaleWire.Infrastructure.Persistence;
 
 namespace WhaleWire.Tests.Integration.TestFixtures;
@@ -43,6 +44,7 @@ public class WhaleWireIntegrationFixture : IAsyncLifetime
         services.AddLogging();
         services.AddPersistence(_postgresContainer.GetConnectionString());
         services.AddMessaging(configuration, _rabbitMqContainer.GetConnectionString());
+        services.AddNotifications();
 
         Services = services.BuildServiceProvider();
         
