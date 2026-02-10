@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using WhaleWire.Application.Alerts;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Application.Persistence;
 using WhaleWire.Messages;
@@ -11,6 +12,8 @@ namespace WhaleWire.Handlers;
 public sealed class BlockchainEventHandler(
     IEventRepository eventRepository,
     ICheckpointRepository  checkpointRepository,
+    IAlertEvaluator alertEvaluator,
+    IAlertNotifier alertNotifier,
     ILogger<BlockchainEventHandler> logger,
     IOptions<CircuitBreakerOptions> options)
     : IMessageConsumer<BlockchainEvent>
@@ -47,6 +50,13 @@ public sealed class BlockchainEventHandler(
                     message.Cursor.Primary,
                     message.Cursor.Secondary,
                     token);
+
+                // Evaluate and send alerts for new events
+                var alerts = await alertEvaluator.EvaluateAsync(message, token);
+                foreach (var alert in alerts)
+                {
+                    await alertNotifier.NotifyAsync(alert, token);
+                }
             }
 
             logger.LogInformation(

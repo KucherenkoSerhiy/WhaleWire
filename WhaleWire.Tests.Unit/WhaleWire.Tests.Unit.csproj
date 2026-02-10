@@ -27,6 +27,7 @@
       <ProjectReference Include="..\WhaleWire.Tests.Common\WhaleWire.Tests.Common.csproj" />
       <ProjectReference Include="..\WhaleWire.Infrastructure.Ingestion\WhaleWire.Infrastructure.Ingestion.csproj" />
       <ProjectReference Include="..\WhaleWire.Infrastructure.Notifications\WhaleWire.Infrastructure.Notifications.csproj" />
+      <ProjectReference Include="..\WhaleWire\WhaleWire.csproj" />
     </ItemGroup>
 
 </Project>
