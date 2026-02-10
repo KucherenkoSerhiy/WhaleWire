@@ -1,8 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
+using WhaleWire.Configuration;
+using WhaleWire.Handlers;
 using WhaleWire.Infrastructure.Messaging;
 using WhaleWire.Infrastructure.Notifications;
 using WhaleWire.Infrastructure.Persistence;
@@ -37,7 +40,9 @@ public class WhaleWireIntegrationFixture : IAsyncLifetime
             {
                 ["RabbitMqRetry:MaxRetries"] = "3",
                 ["RabbitMqRetry:RetryDelays:0"] = "00:00:01",
-                ["RabbitMqRetry:RetryDelays:1"] = "00:00:02"
+                ["RabbitMqRetry:RetryDelays:1"] = "00:00:02",
+                ["CircuitBreaker:ExceptionsAllowedBeforeBreaking"] = "5",
+                ["CircuitBreaker:DurationOfBreakMinutes"] = "1"
             }).Build();
         
         var services = new ServiceCollection();
@@ -45,6 +50,10 @@ public class WhaleWireIntegrationFixture : IAsyncLifetime
         services.AddPersistence(_postgresContainer.GetConnectionString());
         services.AddMessaging(configuration, _rabbitMqContainer.GetConnectionString());
         services.AddNotifications();
+        
+        // Register handler + config
+        services.Configure<CircuitBreakerOptions>(configuration.GetSection("CircuitBreaker"));
+        services.AddScoped<BlockchainEventHandler>();
 
         Services = services.BuildServiceProvider();
         
