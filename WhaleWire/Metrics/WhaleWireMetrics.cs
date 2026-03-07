@@ -29,6 +29,11 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
         "Number of messages in dead letter queue (one message = alert)",
         new Prometheus.GaugeConfiguration { LabelNames = ["queue"] });
 
+    private static readonly Prometheus.Gauge DiscoveryAddresses = Prometheus.Metrics.CreateGauge(
+        "whalewire_discovery_addresses_total",
+        "Addresses discovered in last successful discovery cycle",
+        new Prometheus.GaugeConfiguration { SuppressInitialValue = false });
+
     public void RecordEventsIngested(int count, string chain)
     {
         if (count > 0)
@@ -53,5 +58,10 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
     public void RecordDlqMessageCount(string queue, int count)
     {
         DlqMessages.WithLabels(queue).Set(count);
+    }
+
+    public void RecordDiscoveryAddresses(int count)
+    {
+        DiscoveryAddresses.Set(count);
     }
 }

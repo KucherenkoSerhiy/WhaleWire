@@ -122,3 +122,5 @@ logger.LogInformation("  Health: {Path}", healthOptions.Path);
 logger.LogInformation("  Postgres: {Status}", string.IsNullOrEmpty(postgresConnectionString) ? "Not configured" : "Configured");
 
 await app.RunAsync();
+
+public partial class Program;

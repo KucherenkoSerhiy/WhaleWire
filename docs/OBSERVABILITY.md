@@ -1,5 +1,23 @@
 # WhaleWire Observability Plan
 
+## Implementation Status
+
+| Item | Status |
+|------|--------|
+| Prometheus metrics (`/metrics`) | Done |
+| `whalewire_events_ingested_total` | Done |
+| `whalewire_event_lag_seconds` | Done |
+| `whalewire_alerts_fired_total` | Done |
+| `whalewire_circuit_breaker_state` | Done |
+| `whalewire_dlq_messages_total` | Done |
+| `whalewire_discovery_addresses_total` | Done |
+| Alerting rules | Pending |
+| Correlation IDs | Pending |
+
+**Evidence:** Discovery failure test, HTTP-mocked TonCenter test, `/metrics` E2E test (`MetricsEndpointE2ETests`).
+
+---
+
 ## Why Prometheus?
 
 - **Pull model** — No push infrastructure, no firewall changes. Prometheus scrapes `/metrics`. Works in restricted environments.

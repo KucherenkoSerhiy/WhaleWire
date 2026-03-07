@@ -65,6 +65,20 @@ public sealed class WhaleWireMetricsTests
     }
 
     [Fact]
+    public async Task RecordDiscoveryAddresses_DoesNotThrow_AndMetricAppearsInExport()
+    {
+        var metrics = new WhaleWireMetrics();
+        var act = () => metrics.RecordDiscoveryAddresses(42);
+        act.Should().NotThrow();
+
+        await using var stream = new MemoryStream();
+        await Prometheus.Metrics.DefaultRegistry.CollectAndExportAsTextAsync(stream);
+        var output = Encoding.UTF8.GetString(stream.ToArray());
+        output.Should().Contain("whalewire_discovery_addresses_total");
+        output.Should().Contain("whalewire_discovery_addresses_total 42");
+    }
+
+    [Fact]
     public async Task RecordDlqMessageCount_DoesNotThrow_AndMetricAppearsInExport()
     {
         var metrics = new WhaleWireMetrics();

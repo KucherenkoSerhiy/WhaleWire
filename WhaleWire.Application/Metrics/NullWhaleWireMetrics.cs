@@ -10,4 +10,5 @@ public sealed class NullWhaleWireMetrics : IWhaleWireMetrics
     public void RecordCircuitBreakerState(int state) { }
     public void RecordEventLag(string chain, string address, double lagSeconds) { }
     public void RecordDlqMessageCount(string queue, int count) { }
+    public void RecordDiscoveryAddresses(int count) { }
 }

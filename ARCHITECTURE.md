@@ -280,13 +280,12 @@ A deterministic identifier for blockchain events.
 - **Target**: Repositories, EventIdGenerator
 - **Speed**: < 1s total
 - **DB**: In-memory SQLite via `InMemoryDbContextFixture`
-- **Existing**: 77 tests (repositories, handlers, use cases, alert evaluator, etc.)
+- **Existing**: 86 tests (repositories, handlers, use cases, alert evaluator, metrics, etc.)
 
 ### Integration Tests (`WhaleWire.Tests.Slow`)
 - **Target**: End-to-end flows with real infrastructure
 - **Infrastructure**: Testcontainers (Postgres + RabbitMQ)
-- **Existing**: Idempotency, Checkpoint flows, full alert flow (6 tests)
-- **Future**: IngestorUseCase integration test
+- **Existing**: Idempotency, Checkpoint flows, full alert flow, discovery metrics (failure, HTTP-mocked TonCenter), `/metrics` E2E (17 tests)
 
 ### E2E Tests (Future)
 - **Target**: Full system with real TonAPI (or mocked provider)
@@ -330,7 +329,7 @@ A deterministic identifier for blockchain events.
 2. **Alert Intents**: Event → Alert rules → Notification queue
 3. **Multi-Chain**: ETH, Solana clients via same `IBlockchainClient`
 4. **Horizontal Scaling**: Multiple workers with lease coordination
-5. **Metrics**: Prometheus metrics for ingestion rate, lag, errors
+5. **Metrics** (done): Prometheus `/metrics` — ingestion rate, event lag, circuit breaker, DLQ, discovery addresses
 6. **Admin API**: Trigger manual ingestion, view checkpoints, pause/resume
 
 ---

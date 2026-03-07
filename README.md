@@ -84,7 +84,7 @@ docker compose down
 - **Domain**: Value objects (Cursor), Services (EventIdGenerator)
 - **Application**: Use cases (blockchain-agnostic)
 - **Infrastructure**: TON client, Chainstack client, Postgres, RabbitMQ
-- **Tests**: 77 unit tests, 6 integration tests
+- **Tests**: 86 unit tests, 17 integration tests
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
@@ -158,9 +158,9 @@ docker compose logs -f whalewire | grep "Discovery\|Ingestion"
 ## Next Steps (Chapter 9)
 
 - [x] Alert rules (whale transfers > 100 TON, console notifications)
+- [x] Metrics & observability (Prometheus `/metrics`, discovery, circuit breaker, event lag, DLQ)
 - [ ] Telegram/Discord notifications
 - [ ] Admin API (pause/resume, manual address add)
-- [ ] Metrics & observability
 
 ---
 

@@ -46,5 +46,7 @@ public sealed class DiscoveryOptions
 
     public bool Enabled { get; init; } = true;
     public int PollingIntervalMinutes { get; init; } = 60;
+    /// <summary>If > 0, overrides PollingIntervalMinutes for fast tests.</summary>
+    public int PollingIntervalSeconds { get; init; }
     public int TopAccountsLimit { get; init; } = 100;
 }

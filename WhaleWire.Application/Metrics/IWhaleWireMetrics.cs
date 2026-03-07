@@ -10,4 +10,6 @@ public interface IWhaleWireMetrics
     void RecordEventLag(string chain, string address, double lagSeconds);
     /// <summary>DLQ message count for alerting (one message = alert).</summary>
     void RecordDlqMessageCount(string queue, int count);
+    /// <summary>Addresses discovered in last successful discovery cycle.</summary>
+    void RecordDiscoveryAddresses(int count);
 }
