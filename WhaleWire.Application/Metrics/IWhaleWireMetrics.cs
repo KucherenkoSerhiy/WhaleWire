@@ -12,4 +12,6 @@ public interface IWhaleWireMetrics
     void RecordDlqMessageCount(string queue, int count);
     /// <summary>Addresses discovered in last successful discovery cycle.</summary>
     void RecordDiscoveryAddresses(int count);
+    /// <summary>Unix timestamp (seconds) of last successful discovery. Used for WhaleWireDiscoveryFailed alert.</summary>
+    void RecordDiscoveryLastSuccessTimestamp(long unixTimestampSeconds);
 }

@@ -22,6 +22,7 @@ public sealed class MetricsEndpointE2ETests(WhaleWireWebApplicationFactory facto
 
         content.Should().Contain("whalewire_discovery_addresses_total");
         content.Should().Contain("whalewire_discovery_addresses_total 4");
+        content.Should().Contain("whalewire_discovery_last_success_timestamp_seconds");
     }
 
     [Fact]

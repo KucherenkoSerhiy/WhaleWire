@@ -34,6 +34,11 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
         "Addresses discovered in last successful discovery cycle",
         new Prometheus.GaugeConfiguration { SuppressInitialValue = false });
 
+    private static readonly Prometheus.Gauge DiscoveryLastSuccessTimestamp = Prometheus.Metrics.CreateGauge(
+        "whalewire_discovery_last_success_timestamp_seconds",
+        "Unix timestamp of last successful discovery cycle (for WhaleWireDiscoveryFailed alert)",
+        new Prometheus.GaugeConfiguration { SuppressInitialValue = false });
+
     public void RecordEventsIngested(int count, string chain)
     {
         if (count > 0)
@@ -63,5 +68,10 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
     public void RecordDiscoveryAddresses(int count)
     {
         DiscoveryAddresses.Set(count);
+    }
+
+    public void RecordDiscoveryLastSuccessTimestamp(long unixTimestampSeconds)
+    {
+        DiscoveryLastSuccessTimestamp.Set(unixTimestampSeconds);
     }
 }

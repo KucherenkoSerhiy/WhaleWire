@@ -285,7 +285,7 @@ A deterministic identifier for blockchain events.
 ### Integration Tests (`WhaleWire.Tests.Slow`)
 - **Target**: End-to-end flows with real infrastructure
 - **Infrastructure**: Testcontainers (Postgres + RabbitMQ)
-- **Existing**: Idempotency, Checkpoint flows, full alert flow, discovery metrics (failure, HTTP-mocked TonCenter), `/metrics` E2E (17 tests)
+- **Existing**: Idempotency, Checkpoint flows, full alert flow, discovery metrics (failure, HTTP-mocked TonCenter), `/metrics` E2E, Prometheus rules validation (18 tests)
 
 ### E2E Tests (Future)
 - **Target**: Full system with real TonAPI (or mocked provider)

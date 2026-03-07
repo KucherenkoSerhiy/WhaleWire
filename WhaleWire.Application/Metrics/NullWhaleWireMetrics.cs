@@ -11,4 +11,5 @@ public sealed class NullWhaleWireMetrics : IWhaleWireMetrics
     public void RecordEventLag(string chain, string address, double lagSeconds) { }
     public void RecordDlqMessageCount(string queue, int count) { }
     public void RecordDiscoveryAddresses(int count) { }
+    public void RecordDiscoveryLastSuccessTimestamp(long unixTimestampSeconds) { }
 }

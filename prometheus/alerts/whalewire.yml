@@ -1,0 +1,51 @@
+# WhaleWire Prometheus alerting rules
+# Load via prometheus.yml: rule_files: ["alerts/whalewire.yml"]
+# Principle: One DLQ message → alert. No thresholds for DLQ.
+
+groups:
+  - name: whalewire
+    rules:
+      - alert: WhaleWireDlqMessage
+        expr: whalewire_dlq_messages_total > 0
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: "WhaleWire DLQ has messages"
+          description: "Dead letter queue has {{ $value }} message(s). One message = alert."
+
+      - alert: WhaleWireCircuitBreakerOpen
+        expr: whalewire_circuit_breaker_state == 2
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: "WhaleWire circuit breaker is open"
+          description: "Event handler circuit breaker is open (state=2). Messages are being rejected."
+
+      - alert: WhaleWireIngestionStalled
+        expr: increase(whalewire_events_ingested_total[10m]) == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WhaleWire ingestion stalled"
+          description: "No events ingested in the last 10 minutes."
+
+      - alert: WhaleWireEventLagHigh
+        expr: whalewire_event_lag_seconds > 1800
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WhaleWire event lag high"
+          description: "Address {{ $labels.address }} has lag {{ $value | humanizeDuration }} (chain={{ $labels.chain }})."
+
+      - alert: WhaleWireDiscoveryFailed
+        expr: (time() - whalewire_discovery_last_success_timestamp_seconds) > 7200
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WhaleWire discovery cycle error"
+          description: "No successful discovery in over 2 hours."

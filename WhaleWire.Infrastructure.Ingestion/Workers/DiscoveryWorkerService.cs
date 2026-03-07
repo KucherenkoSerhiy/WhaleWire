@@ -58,6 +58,7 @@ public sealed class DiscoveryWorkerService(
             var count = await discoveryUseCase.ExecuteAsync(_options.TopAccountsLimit, ct);
 
             metrics.RecordDiscoveryAddresses(count);
+            metrics.RecordDiscoveryLastSuccessTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             logger.LogInformation("Discovery completed: {Count} addresses updated", count);
         }
         catch (Exception ex)

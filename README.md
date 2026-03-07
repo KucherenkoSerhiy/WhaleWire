@@ -84,7 +84,7 @@ docker compose down
 - **Domain**: Value objects (Cursor), Services (EventIdGenerator)
 - **Application**: Use cases (blockchain-agnostic)
 - **Infrastructure**: TON client, Chainstack client, Postgres, RabbitMQ
-- **Tests**: 86 unit tests, 17 integration tests
+- **Tests**: 87 unit tests, 18 integration tests
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
@@ -130,7 +130,11 @@ Key settings in `appsettings.json` or `.env`:
 ## Monitoring
 
 **Health:** http://localhost:5007/health  
-**Metrics:** http://localhost:5007/metrics (Prometheus)
+**Metrics:** http://localhost:5007/metrics (Prometheus)  
+**Prometheus:** http://localhost:9090 (when using `docker compose up`)  
+**Alertmanager:** http://localhost:9093 (when using `docker compose up`)
+
+Alert rules: `prometheus/alerts/whalewire.yml` (DLQ, circuit breaker, ingestion stalled, event lag, discovery failed).
 
 **Logs:**
 ```bash

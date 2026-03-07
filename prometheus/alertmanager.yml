@@ -1,0 +1,33 @@
+# Alertmanager config for WhaleWire
+# Routes alerts. Customize receivers for Slack, PagerDuty, etc.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: default
+
+  routes:
+    - match:
+        severity: critical
+      receiver: critical
+      repeat_interval: 1h
+
+    - match:
+        severity: warning
+      receiver: warning
+      repeat_interval: 4h
+
+receivers:
+  - name: default
+    # Add webhook_configs, slack_configs, etc. as needed
+
+  - name: critical
+    # Critical: DLQ, circuit breaker. Add PagerDuty/Slack here.
+
+  - name: warning
+    # Warning: ingestion stalled, event lag, discovery failed.

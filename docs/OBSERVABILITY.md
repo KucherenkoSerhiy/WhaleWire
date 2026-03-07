@@ -11,10 +11,11 @@
 | `whalewire_circuit_breaker_state` | Done |
 | `whalewire_dlq_messages_total` | Done |
 | `whalewire_discovery_addresses_total` | Done |
-| Alerting rules | Pending |
+| `whalewire_discovery_last_success_timestamp_seconds` | Done |
+| Alerting rules | Done |
 | Correlation IDs | Pending |
 
-**Evidence:** Discovery failure test, HTTP-mocked TonCenter test, `/metrics` E2E test (`MetricsEndpointE2ETests`).
+**Evidence:** Discovery failure test, HTTP-mocked TonCenter test, `/metrics` E2E test (`MetricsEndpointE2ETests`), `whalewire_discovery_last_success_timestamp_seconds` E2E assertion, Prometheus rules validation (`PrometheusRulesValidationTests` via promtool).
 
 ---
 
@@ -43,12 +44,13 @@
 | `whalewire_circuit_breaker_state` | Gauge | — | 0=closed, 1=half-open, 2=open |
 | `whalewire_dlq_messages_total` | Gauge | queue | DLQ depth (or count) |
 | `whalewire_discovery_addresses_total` | Gauge | — | Addresses discovered last cycle |
+| `whalewire_discovery_last_success_timestamp_seconds` | Gauge | — | Unix timestamp of last successful discovery (for WhaleWireDiscoveryFailed) |
 
 **Endpoint:** `GET /metrics` (Prometheus format)
 
 ---
 
-### 2. Alerting Rules (required, strict)
+### 2. Alerting Rules (required, strict) — Done
 
 | Alert | Condition | Severity |
 |-------|-----------|----------|
@@ -56,9 +58,11 @@
 | `WhaleWireCircuitBreakerOpen` | Circuit breaker open | Critical |
 | `WhaleWireIngestionStalled` | No events for 10+ minutes | Warning |
 | `WhaleWireEventLagHigh` | Lag > 30 minutes for any address | Warning |
-| `WhaleWireDiscoveryFailed` | Discovery cycle error | Warning |
+| `WhaleWireDiscoveryFailed` | No successful discovery in 2+ hours | Warning |
 
 **Principle:** One DLQ message → alert. No thresholds for DLQ.
+
+**Location:** `prometheus/alerts/whalewire.yml`. Prometheus + Alertmanager in `docker-compose.yml` (ports 9090, 9093).
 
 ---
 

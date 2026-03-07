@@ -79,6 +79,20 @@ public sealed class WhaleWireMetricsTests
     }
 
     [Fact]
+    public async Task RecordDiscoveryLastSuccessTimestamp_DoesNotThrow_AndMetricAppearsInExport()
+    {
+        var metrics = new WhaleWireMetrics();
+        var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var act = () => metrics.RecordDiscoveryLastSuccessTimestamp(ts);
+        act.Should().NotThrow();
+
+        await using var stream = new MemoryStream();
+        await Prometheus.Metrics.DefaultRegistry.CollectAndExportAsTextAsync(stream);
+        var output = Encoding.UTF8.GetString(stream.ToArray());
+        output.Should().Contain("whalewire_discovery_last_success_timestamp_seconds");
+    }
+
+    [Fact]
     public async Task RecordDlqMessageCount_DoesNotThrow_AndMetricAppearsInExport()
     {
         var metrics = new WhaleWireMetrics();
