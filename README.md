@@ -129,7 +129,8 @@ Key settings in `appsettings.json` or `.env`:
 
 ## Monitoring
 
-**Health:** http://localhost:5007/health
+**Health:** http://localhost:5007/health  
+**Metrics:** http://localhost:5007/metrics (Prometheus)
 
 **Logs:**
 ```bash

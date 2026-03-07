@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 using Microsoft.Extensions.Options;
 using WhaleWire.Application.Blockchain;
 using WhaleWire.Application.Messaging;
@@ -94,6 +95,10 @@ using (var scope = app.Services.CreateScope())
 // Health endpoint
 var healthOptions = app.Services.GetRequiredService<IOptions<HealthOptions>>().Value;
 app.MapHealthChecks(healthOptions.Path);
+
+// Prometheus metrics
+app.UseHttpMetrics();
+app.MapMetrics();
 
 // Log startup and config summary (no secrets)
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
