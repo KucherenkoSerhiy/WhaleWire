@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 
 # Install clang for NativeAOT compilation
@@ -15,12 +15,9 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./WhaleWire.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 
-# Use a minimal runtime image for NativeAOT (no .NET runtime needed)
-FROM mcr.microsoft.com/dotnet/runtime-deps:10.0 AS final
-USER $APP_UID
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
 ENV DOTNET_ENVIRONMENT=Development
 COPY --from=publish /app/publish .
-ENTRYPOINT ["./WhaleWire"]
+ENTRYPOINT ["dotnet", "WhaleWire.dll"]

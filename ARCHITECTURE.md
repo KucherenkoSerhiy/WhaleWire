@@ -177,7 +177,11 @@ A deterministic identifier for blockchain events.
 
 **Configuration:**
 - Multi-layer: appsettings.json → environment variables
-- Typed options: `TonApiOptions`, `CircuitBreakerOptions`, `SchedulerOptions`
+- Typed options: `TonApiOptions`, `CircuitBreakerOptions`, `SchedulerOptions`, `HealthOptions`
+
+**Health:**
+- `/health` endpoint checks Postgres and RabbitMQ
+- Configurable path via `Health:Path` (default `/health`)
 
 ---
 

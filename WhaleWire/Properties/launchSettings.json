@@ -2,6 +2,7 @@
   "profiles": {
     "WhaleWire": {
       "commandName": "Project",
+      "applicationUrl": "http://localhost:5007",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

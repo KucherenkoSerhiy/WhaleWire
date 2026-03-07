@@ -41,6 +41,7 @@ services:
     ports:
       - "5007:8080"
     environment:
+      - ASPNETCORE_URLS=http://*:8080
       - DOTNET_ENVIRONMENT=Development
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=whalewire;Username=whalewire;Password=${POSTGRES_PASSWORD}
       - ConnectionStrings__RabbitMQ=amqp://whalewire:${RABBITMQ_PASSWORD}@rabbitmq:5672

@@ -75,7 +75,13 @@ public sealed class AlertEvaluator(ILogger<AlertEvaluator> logger) : IAlertEvalu
         if (!msg.TryGetProperty("value", out var valueProp))
             return null;
 
-        var valueStr = valueProp.GetString();
+        // TonAPI may return value as string or number
+        string? valueStr = valueProp.ValueKind switch
+        {
+            JsonValueKind.String => valueProp.GetString(),
+            JsonValueKind.Number => valueProp.GetRawText(),
+            _ => null
+        };
         if (string.IsNullOrEmpty(valueStr))
             return null;
 

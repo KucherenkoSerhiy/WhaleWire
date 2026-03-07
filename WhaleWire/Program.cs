@@ -14,13 +14,15 @@ using WhaleWire.Infrastructure.Persistence;
 using WhaleWire.Messages;
 using WhaleWire.Services;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // Configuration
 builder.Services.Configure<SchedulerOptions>(
     builder.Configuration.GetSection(SchedulerOptions.SectionName));
 builder.Services.Configure<CircuitBreakerOptions>(
     builder.Configuration.GetSection(CircuitBreakerOptions.SectionName));
+builder.Services.Configure<HealthOptions>(
+    builder.Configuration.GetSection(HealthOptions.SectionName));
 
 // Infrastructure - Ingestion
 builder.Services.AddIngestion(builder.Configuration);
@@ -40,7 +42,7 @@ builder.Services.AddScoped<IDiscoveryUseCase, DiscoveryUseCase>();
 builder.Services.AddScoped<IIngestionCoordinatorUseCase, IngestionCoordinatorUseCase>();
 
 // Infrastructure - Persistence
-var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres") 
+var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Postgres connection string is required");
 builder.Services.AddPersistence(postgresConnectionString);
 
@@ -52,15 +54,26 @@ builder.Services.AddMessaging(builder.Configuration, rabbitMqConnectionString);
 // Infrastructure - Notifications
 builder.Services.AddNotifications();
 
+// Health checks - RabbitMQ requires IConnection (v9+); register singleton for health check
+builder.Services.AddSingleton<RabbitMQ.Client.IConnection>(sp =>
+{
+    var factory = new RabbitMQ.Client.ConnectionFactory { Uri = new Uri(rabbitMqConnectionString) };
+    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+});
+builder.Services.AddHealthChecks()
+    .AddNpgSql(postgresConnectionString, name: "postgres")
+    .AddRabbitMQ(name: "rabbitmq");
+
 // Message consumers
 builder.Services.AddMessageConsumer<BlockchainEvent, BlockchainEventHandler>();
 
 // Hosted services
 builder.Services.AddHostedService<SchedulerService>();
 
-var host = builder.Build();
+var app = builder.Build();
 
-using (var scope = host.Services.CreateScope())
+// Migrations
+using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<WhaleWireDbContext>();
     var migrationLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
@@ -78,15 +91,20 @@ using (var scope = host.Services.CreateScope())
     }
 }
 
+// Health endpoint
+var healthOptions = app.Services.GetRequiredService<IOptions<HealthOptions>>().Value;
+app.MapHealthChecks(healthOptions.Path);
+
 // Log startup and config summary (no secrets)
-var logger = host.Services.GetRequiredService<ILogger<Program>>();
-var schedulerOptions = host.Services.GetRequiredService<IOptions<SchedulerOptions>>().Value;
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var schedulerOptions = app.Services.GetRequiredService<IOptions<SchedulerOptions>>().Value;
 
 logger.LogInformation("WhaleWire starting...");
 logger.LogInformation("Environment: {Environment}", builder.Environment.EnvironmentName);
 logger.LogInformation("Configuration summary:");
 logger.LogInformation("  Scheduler.Enabled: {Enabled}", schedulerOptions.Enabled);
 logger.LogInformation("  Scheduler.PollingIntervalSeconds: {PollingInterval}", schedulerOptions.PollingIntervalSeconds);
+logger.LogInformation("  Health: {Path}", healthOptions.Path);
 logger.LogInformation("  Postgres: {Status}", string.IsNullOrEmpty(postgresConnectionString) ? "Not configured" : "Configured");
 
-await host.RunAsync();
+await app.RunAsync();

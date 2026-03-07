@@ -129,7 +129,7 @@ Key settings in `appsettings.json` or `.env`:
 
 ## Monitoring
 
-**Health:** http://localhost:5007/health (TODO)
+**Health:** http://localhost:5007/health
 
 **Logs:**
 ```bash
