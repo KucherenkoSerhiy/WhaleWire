@@ -7,4 +7,5 @@ public sealed class NullWhaleWireMetrics : IWhaleWireMetrics
 {
     public void RecordEventsIngested(int count, string chain) { }
     public void RecordAlertFired(string assetId, string direction) { }
+    public void RecordCircuitBreakerState(int state) { }
 }

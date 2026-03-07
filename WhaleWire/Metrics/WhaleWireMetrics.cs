@@ -14,6 +14,11 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
         "Total whale alerts fired",
         new Prometheus.CounterConfiguration { LabelNames = ["asset", "direction"] });
 
+    private static readonly Prometheus.Gauge CircuitBreakerState = Prometheus.Metrics.CreateGauge(
+        "whalewire_circuit_breaker_state",
+        "Circuit breaker state: 0=closed, 1=half-open, 2=open",
+        new Prometheus.GaugeConfiguration { SuppressInitialValue = false });
+
     public void RecordEventsIngested(int count, string chain)
     {
         if (count > 0)
@@ -23,5 +28,10 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
     public void RecordAlertFired(string assetId, string direction)
     {
         AlertsFired.WithLabels(assetId, direction).Inc();
+    }
+
+    public void RecordCircuitBreakerState(int state)
+    {
+        CircuitBreakerState.Set(state);
     }
 }
