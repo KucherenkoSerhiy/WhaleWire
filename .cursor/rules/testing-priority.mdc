@@ -1,0 +1,12 @@
+---
+description: Prioritize integration/component tests over unit tests
+alwaysApply: true
+---
+
+# Testing Priority
+
+**Prefer integration and component tests over unit tests.**
+
+- Unit tests are more fragile (mocks, internals) and carry less value.
+- Integration/component tests exercise real flows and give higher confidence.
+- When adding coverage, add integration tests first; add unit tests only when they add clear value (e.g., complex logic, edge cases).

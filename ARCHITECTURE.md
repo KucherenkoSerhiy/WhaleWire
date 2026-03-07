@@ -274,6 +274,8 @@ A deterministic identifier for blockchain events.
 
 ## Testing Strategy
 
+**Priority:** Integration/component tests over unit tests. Unit tests are more fragile and carry less value; prefer real flows when adding coverage.
+
 ### Unit Tests (`WhaleWire.Tests.Unit`)
 - **Target**: Repositories, EventIdGenerator
 - **Speed**: < 1s total
