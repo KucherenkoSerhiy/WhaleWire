@@ -35,4 +35,17 @@ public sealed class WhaleWireMetricsTests
         output.Should().Contain("asset=\"TON\"");
         output.Should().Contain("direction=\"IN\"");
     }
+
+    [Fact]
+    public async Task RecordCircuitBreakerState_DoesNotThrow_AndMetricAppearsInExport()
+    {
+        var metrics = new WhaleWireMetrics();
+        var act = () => metrics.RecordCircuitBreakerState(0);
+        act.Should().NotThrow();
+
+        await using var stream = new MemoryStream();
+        await Prometheus.Metrics.DefaultRegistry.CollectAndExportAsTextAsync(stream);
+        var output = Encoding.UTF8.GetString(stream.ToArray());
+        output.Should().Contain("whalewire_circuit_breaker_state");
+    }
 }

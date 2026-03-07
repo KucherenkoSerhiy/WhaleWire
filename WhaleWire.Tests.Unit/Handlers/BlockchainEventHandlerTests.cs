@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using WhaleWire.Application.Alerts;
+using WhaleWire.Application.Metrics;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Application.Persistence;
 using WhaleWire.Configuration;
@@ -38,6 +39,7 @@ public sealed class BlockchainEventHandlerTests
             _checkpointRepoMock.Object,
             _alertEvaluatorMock.Object,
             _alertNotifierMock.Object,
+            new NullWhaleWireMetrics(),
             NullLogger<BlockchainEventHandler>.Instance,
             options);
     }
