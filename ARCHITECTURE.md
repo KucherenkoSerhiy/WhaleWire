@@ -274,12 +274,12 @@ A deterministic identifier for blockchain events.
 - **Target**: Repositories, EventIdGenerator
 - **Speed**: < 1s total
 - **DB**: In-memory SQLite via `InMemoryDbContextFixture`
-- **Existing**: 15 tests (EventRepository, CheckpointRepository, LeaseRepository)
+- **Existing**: 77 tests (repositories, handlers, use cases, alert evaluator, etc.)
 
 ### Integration Tests (`WhaleWire.Tests.Slow`)
 - **Target**: End-to-end flows with real infrastructure
 - **Infrastructure**: Testcontainers (Postgres + RabbitMQ)
-- **Existing**: Idempotency, Checkpoint flows
+- **Existing**: Idempotency, Checkpoint flows, full alert flow (6 tests)
 - **Future**: IngestorUseCase integration test
 
 ### E2E Tests (Future)
