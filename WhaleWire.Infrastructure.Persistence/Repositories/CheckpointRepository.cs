@@ -50,4 +50,14 @@ public sealed class CheckpointRepository(WhaleWireDbContext db) : ICheckpointRep
 
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<CheckpointTimestamp>> GetCheckpointTimestampsAsync(CancellationToken ct = default)
+    {
+        return await db.Checkpoints
+            .AsNoTracking()
+            .GroupBy(c => new { c.Chain, c.Address })
+            .Select(g => new { g.Key.Chain, g.Key.Address, UpdatedAt = g.Max(c => c.UpdatedAt) })
+            .Select(x => new CheckpointTimestamp(x.Chain, x.Address, x.UpdatedAt))
+            .ToListAsync(ct);
+    }
 }

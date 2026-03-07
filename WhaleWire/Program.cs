@@ -26,6 +26,8 @@ builder.Services.Configure<CircuitBreakerOptions>(
     builder.Configuration.GetSection(CircuitBreakerOptions.SectionName));
 builder.Services.Configure<HealthOptions>(
     builder.Configuration.GetSection(HealthOptions.SectionName));
+builder.Services.Configure<MetricsCollectorOptions>(
+    builder.Configuration.GetSection(MetricsCollectorOptions.SectionName));
 
 // Infrastructure - Ingestion
 builder.Services.AddIngestion(builder.Configuration);
@@ -75,6 +77,8 @@ builder.Services.AddMessageConsumer<BlockchainEvent, BlockchainEventHandler>();
 
 // Hosted services
 builder.Services.AddHostedService<SchedulerService>();
+builder.Services.AddHostedService<EventLagMetricsCollector>();
+builder.Services.AddHostedService<DlqMetricsCollector>();
 
 var app = builder.Build();
 

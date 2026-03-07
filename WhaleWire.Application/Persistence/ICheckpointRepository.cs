@@ -25,4 +25,11 @@ public interface ICheckpointRepository
         long lastLt,
         string lastHash,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the latest UpdatedAt per (chain, address) for event lag metrics.
+    /// </summary>
+    Task<IReadOnlyList<CheckpointTimestamp>> GetCheckpointTimestampsAsync(CancellationToken ct = default);
 }
+
+public record CheckpointTimestamp(string Chain, string Address, DateTime UpdatedAt);

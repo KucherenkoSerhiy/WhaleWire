@@ -19,6 +19,16 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
         "Circuit breaker state: 0=closed, 1=half-open, 2=open",
         new Prometheus.GaugeConfiguration { SuppressInitialValue = false });
 
+    private static readonly Prometheus.Gauge EventLagSeconds = Prometheus.Metrics.CreateGauge(
+        "whalewire_event_lag_seconds",
+        "Seconds since last event per address",
+        new Prometheus.GaugeConfiguration { LabelNames = ["chain", "address"] });
+
+    private static readonly Prometheus.Gauge DlqMessages = Prometheus.Metrics.CreateGauge(
+        "whalewire_dlq_messages_total",
+        "Number of messages in dead letter queue (one message = alert)",
+        new Prometheus.GaugeConfiguration { LabelNames = ["queue"] });
+
     public void RecordEventsIngested(int count, string chain)
     {
         if (count > 0)
@@ -33,5 +43,15 @@ public sealed class WhaleWireMetrics : IWhaleWireMetrics
     public void RecordCircuitBreakerState(int state)
     {
         CircuitBreakerState.Set(state);
+    }
+
+    public void RecordEventLag(string chain, string address, double lagSeconds)
+    {
+        EventLagSeconds.WithLabels(chain, address).Set(lagSeconds);
+    }
+
+    public void RecordDlqMessageCount(string queue, int count)
+    {
+        DlqMessages.WithLabels(queue).Set(count);
     }
 }
