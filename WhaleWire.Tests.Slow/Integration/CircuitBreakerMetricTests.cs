@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Polly.CircuitBreaker;
 using Prometheus;
+using WhaleWire.Application.Metrics;
 using WhaleWire.Application.Persistence;
 using WhaleWire.Configuration;
 using WhaleWire.Domain;
@@ -123,5 +124,50 @@ public sealed class CircuitBreakerMetricTests
         var output = Encoding.UTF8.GetString(stream.ToArray());
         output.Should().Contain("whalewire_circuit_breaker_state");
         output.Should().Contain("whalewire_circuit_breaker_state 2");
+    }
+
+    [Fact]
+    public async Task E2E_EventLag_RecordedAfterSuccessfulHandle()
+    {
+        var fixture = new WhaleWireMetricsIntegrationFixture();
+        await fixture.InitializeAsync();
+        try
+        {
+            using var scope = fixture.Services.CreateScope();
+            var handler = scope.ServiceProvider.GetRequiredService<BlockchainEventHandler>();
+            var checkpointRepo = scope.ServiceProvider.GetRequiredService<ICheckpointRepository>();
+            var metrics = scope.ServiceProvider.GetRequiredService<IWhaleWireMetrics>();
+
+            var evt = new BlockchainEvent
+            {
+                EventId = $"lag-{Guid.NewGuid()}",
+                Chain = "ton",
+                Provider = "tonapi",
+                Address = "0:LAG_ADDRESS",
+                Cursor = new Cursor(9100, "hash9100"),
+                OccurredAt = DateTime.UtcNow,
+                RawJson = """{"in_msg": {"value": "10000000000"}}"""
+            };
+
+            await handler.HandleAsync(evt);
+
+            var timestamps = await checkpointRepo.GetCheckpointTimestampsAsync();
+            var now = DateTime.UtcNow;
+            foreach (var ts in timestamps.Where(t => t.Address == "0:LAG_ADDRESS"))
+            {
+                var lagSeconds = (now - ts.UpdatedAt).TotalSeconds;
+                metrics.RecordEventLag(ts.Chain, ts.Address, lagSeconds);
+            }
+
+            await using var stream = new MemoryStream();
+            await Prometheus.Metrics.DefaultRegistry.CollectAndExportAsTextAsync(stream);
+            var output = Encoding.UTF8.GetString(stream.ToArray());
+            output.Should().Contain("whalewire_event_lag_seconds");
+            output.Should().Contain("address=\"0:LAG_ADDRESS\"");
+        }
+        finally
+        {
+            await fixture.DisposeAsync();
+        }
     }
 }

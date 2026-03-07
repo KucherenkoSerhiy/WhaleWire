@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using WhaleWire.Infrastructure.Persistence.Repositories;
 using WhaleWire.Tests.Common.Builders;
 using WhaleWire.Tests.Common.Fixtures;
@@ -70,5 +70,18 @@ public sealed class CheckpointRepositoryTests : InMemoryDbContextFixture
         result.Should().NotBeNull();
         result!.LastLt.Should().Be(NewLt);
         result.LastHash.Should().Be(NewHash);
+    }
+
+    [Fact]
+    public async Task GetCheckpointTimestamps_ReturnsLatestPerChainAddress()
+    {
+        await _repository.UpdateCheckpointMonotonicAsync(Chain, Address, Provider, OldLt, OldHash);
+        await _repository.UpdateCheckpointMonotonicAsync(Chain, "addr2", Provider, NewLt, NewHash);
+
+        var timestamps = await _repository.GetCheckpointTimestampsAsync();
+
+        timestamps.Should().HaveCount(2);
+        timestamps.Should().Contain(t => t.Chain == Chain && t.Address == Address);
+        timestamps.Should().Contain(t => t.Chain == Chain && t.Address == "addr2");
     }
 }
