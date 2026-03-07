@@ -95,13 +95,13 @@ public sealed class AlertEvaluator(ILogger<AlertEvaluator> logger) : IAlertEvalu
         if (amountTon < ThresholdTon)
             return null;
 
-        // Extract source/destination
-        var source = msg.TryGetProperty("source", out var srcProp) 
-            ? srcProp.GetString() ?? "unknown" 
+        // Extract source/destination - TonAPI may return string or object {workchain_id, address}
+        var source = msg.TryGetProperty("source", out var srcProp)
+            ? GetAddressString(srcProp)
             : "unknown";
-        
-        var destination = msg.TryGetProperty("destination", out var dstProp) 
-            ? dstProp.GetString() ?? "unknown" 
+
+        var destination = msg.TryGetProperty("destination", out var dstProp)
+            ? GetAddressString(dstProp)
             : "unknown";
 
         var message = direction == "IN"
@@ -118,8 +118,40 @@ public sealed class AlertEvaluator(ILogger<AlertEvaluator> logger) : IAlertEvalu
 
     private static string FormatAddress(string address)
     {
-        return address.Length > 10 
-            ? address[..10] + "..." 
+        return address.Length > 10
+            ? address[..10] + "..."
             : address;
+    }
+
+    /// <summary>
+    /// Extracts address string from TonAPI JSON. Handles both string format ("0:EQD...")
+    /// and object format ({"workchain_id": 0, "address": "EQD..."}).
+    /// </summary>
+    private static string GetAddressString(JsonElement prop)
+    {
+        return prop.ValueKind switch
+        {
+            JsonValueKind.String => prop.GetString() ?? "unknown",
+            JsonValueKind.Object => GetAddressFromObject(prop),
+            _ => "unknown"
+        };
+    }
+
+    private static string GetAddressFromObject(JsonElement obj)
+    {
+        // TonAPI object: {"workchain_id": 0, "address": "EQD..."} or {"address": "0:EQD..."}
+        if (obj.TryGetProperty("address", out var addrProp))
+        {
+            var addr = addrProp.ValueKind == JsonValueKind.String ? addrProp.GetString() : null;
+            if (!string.IsNullOrEmpty(addr))
+            {
+                if (obj.TryGetProperty("workchain_id", out var wcProp) && wcProp.TryGetInt32(out var wc) && !addr.Contains(':'))
+                    return $"{wc}:{addr}";
+                return addr;
+            }
+        }
+        if (obj.TryGetProperty("raw_form", out var rawProp))
+            return rawProp.GetString() ?? "unknown";
+        return "unknown";
     }
 }

@@ -187,6 +187,45 @@ public sealed class AlertEvaluatorTests
     }
 
     [Fact]
+    public async Task EvaluateAsync_SourceDestinationAsObject_TonApiFormat_ReturnsAlert()
+    {
+        // TonAPI may return source/destination as {"workchain_id": 0, "address": "EQD..."}
+        var evt = CreateEvent("""
+            {
+                "in_msg": {
+                    "source": {"workchain_id": 0, "address": "EQD0vdQ_NuRqV8Zg_9Khzd8rE2bJQpNqaV1W3SHK8xTpq"},
+                    "destination": {"workchain_id": 0, "address": "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id"},
+                    "value": "150000000000"
+                }
+            }
+            """);
+
+        var alerts = await _evaluator.EvaluateAsync(evt);
+
+        alerts.Should().HaveCount(1);
+        alerts[0].Amount.Should().Be(150m);
+        alerts[0].Message.Should().Contain("0:EQD0vdQ_");
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ValueAsNumber_TonApiFormat_ReturnsAlert()
+    {
+        // TonAPI may return value as number instead of string
+        var evt = CreateEvent("""
+            {
+                "in_msg": {
+                    "value": 250000000000
+                }
+            }
+            """);
+
+        var alerts = await _evaluator.EvaluateAsync(evt);
+
+        alerts.Should().HaveCount(1);
+        alerts[0].Amount.Should().Be(250m);
+    }
+
+    [Fact]
     public async Task EvaluateAsync_ExactThreshold_ReturnsAlert()
     {
         // Arrange - 100 TON exactly (at threshold, should trigger)
