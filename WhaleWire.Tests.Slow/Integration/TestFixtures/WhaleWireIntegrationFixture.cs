@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
+using WhaleWire.Application.Metrics;
 using WhaleWire.Configuration;
 using WhaleWire.Handlers;
 using WhaleWire.Infrastructure.Messaging;
@@ -50,7 +51,8 @@ public class WhaleWireIntegrationFixture : IAsyncLifetime
         services.AddPersistence(_postgresContainer.GetConnectionString());
         services.AddMessaging(configuration, _rabbitMqContainer.GetConnectionString());
         services.AddNotifications();
-        
+        services.AddSingleton<IWhaleWireMetrics, NullWhaleWireMetrics>();
+
         // Register handler + config
         services.Configure<CircuitBreakerOptions>(configuration.GetSection("CircuitBreaker"));
         services.AddScoped<BlockchainEventHandler>();

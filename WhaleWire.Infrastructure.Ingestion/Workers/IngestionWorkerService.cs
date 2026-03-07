@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using WhaleWire.Application.Metrics;
 using WhaleWire.Application.Persistence;
 using WhaleWire.Application.UseCases;
 using WhaleWire.Infrastructure.Ingestion.Configuration;
@@ -11,7 +12,8 @@ namespace WhaleWire.Infrastructure.Ingestion.Workers;
 public sealed class IngestionWorkerService(
     IServiceProvider serviceProvider,
     IOptions<IngestionOptions> options,
-    ILogger<IngestionWorkerService> logger) : BackgroundService
+    ILogger<IngestionWorkerService> logger,
+    IWhaleWireMetrics metrics) : BackgroundService
 {
     private readonly IngestionOptions _options = options.Value;
 
@@ -55,6 +57,7 @@ public sealed class IngestionWorkerService(
 
         if (result.TotalEventsPublished > 0)
         {
+            metrics.RecordEventsIngested(result.TotalEventsPublished, "ton");
             logger.LogInformation(
                 "Ingestion cycle: {Events} events from {Addresses} addresses",
                 result.TotalEventsPublished, result.AddressesProcessed);

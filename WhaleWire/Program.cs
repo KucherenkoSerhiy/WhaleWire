@@ -13,6 +13,8 @@ using WhaleWire.Infrastructure.Messaging;
 using WhaleWire.Infrastructure.Notifications;
 using WhaleWire.Infrastructure.Persistence;
 using WhaleWire.Messages;
+using WhaleWire.Application.Metrics;
+using WhaleWire.Metrics;
 using WhaleWire.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -54,6 +56,9 @@ builder.Services.AddMessaging(builder.Configuration, rabbitMqConnectionString);
 
 // Infrastructure - Notifications
 builder.Services.AddNotifications();
+
+// Metrics
+builder.Services.AddSingleton<IWhaleWireMetrics, WhaleWireMetrics>();
 
 // Health checks - RabbitMQ requires IConnection (v9+); register singleton for health check
 builder.Services.AddSingleton<RabbitMQ.Client.IConnection>(sp =>

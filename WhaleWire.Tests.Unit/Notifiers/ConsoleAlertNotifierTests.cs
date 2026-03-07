@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WhaleWire.Application.Alerts;
+using WhaleWire.Application.Metrics;
 using WhaleWire.Infrastructure.Notifications.Notifiers;
 
 namespace WhaleWire.Tests.Unit.Notifiers;
@@ -13,7 +14,7 @@ public sealed class ConsoleAlertNotifierTests
 
     public ConsoleAlertNotifierTests()
     {
-        _notifier = new ConsoleAlertNotifier(_loggerMock.Object);
+        _notifier = new ConsoleAlertNotifier(_loggerMock.Object, new NullWhaleWireMetrics());
     }
 
     [Fact]
