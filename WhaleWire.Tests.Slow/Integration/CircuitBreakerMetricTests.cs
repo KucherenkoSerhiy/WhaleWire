@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Polly.CircuitBreaker;
 using Prometheus;
+using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Metrics;
 using WhaleWire.Application.Persistence;
 using WhaleWire.Configuration;
@@ -81,6 +82,8 @@ public sealed class CircuitBreakerMetricTests
         var checkpointRepoMock = new Mock<ICheckpointRepository>();
         var alertEvaluatorMock = new Mock<WhaleWire.Application.Alerts.IAlertEvaluator>();
         var alertNotifierMock = new Mock<WhaleWire.Application.Alerts.IAlertNotifier>();
+        var correlationIdAccessorMock = new Mock<ICorrelationIdAccessor>();
+        correlationIdAccessorMock.Setup(x => x.CorrelationId).Returns("circuit-test");
 
         var options = Options.Create(new CircuitBreakerOptions
         {
@@ -94,6 +97,7 @@ public sealed class CircuitBreakerMetricTests
             checkpointRepoMock.Object,
             alertEvaluatorMock.Object,
             alertNotifierMock.Object,
+            correlationIdAccessorMock.Object,
             metrics,
             NullLogger<BlockchainEventHandler>.Instance,
             options);

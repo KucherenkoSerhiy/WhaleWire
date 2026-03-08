@@ -40,7 +40,9 @@ public sealed class IngestorUseCase(
             
             foreach (var evt in events)
             {
-                await messagePublisher.PublishAsync(evt, token);
+                var correlationId = Guid.NewGuid().ToString("N");
+                var evtWithCorrelation = evt with { CorrelationId = correlationId };
+                await messagePublisher.PublishAsync(evtWithCorrelation, token);
             }
 
             return events.Count;

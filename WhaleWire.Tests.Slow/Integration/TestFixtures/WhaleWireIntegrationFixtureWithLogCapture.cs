@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
@@ -12,16 +13,17 @@ using WhaleWire.Infrastructure.Messaging;
 using WhaleWire.Infrastructure.Messaging.CorrelationId;
 using WhaleWire.Infrastructure.Notifications;
 using WhaleWire.Infrastructure.Persistence;
-using WhaleWire.Metrics;
+using WhaleWire.Tests.Fakes;
 
 namespace WhaleWire.Tests.Integration.TestFixtures;
 
 /// <summary>
-/// Same as WhaleWireIntegrationFixture but uses real WhaleWireMetrics for proof tests.
-/// Verifies metrics are recorded in integration flows.
+/// Same as WhaleWireIntegrationFixture but captures logs for CorrelationId verification.
+/// Handler is invoked directly (no RabbitMQ consumer); test sets ICorrelationIdAccessor before calling handler.
 /// </summary>
-public sealed class WhaleWireMetricsIntegrationFixture : IAsyncLifetime
+public sealed class WhaleWireIntegrationFixtureWithLogCapture : IAsyncLifetime
 {
+    private readonly LogCaptureProvider _logCapture = new();
     private readonly PostgreSqlContainer _postgresContainer
         = new PostgreSqlBuilder("postgres:17")
             .WithDatabase("whalewire_test")
@@ -36,6 +38,7 @@ public sealed class WhaleWireMetricsIntegrationFixture : IAsyncLifetime
             .Build();
 
     public IServiceProvider Services { get; private set; } = null!;
+    public IReadOnlyList<string> CapturedLogs => _logCapture.Messages;
 
     public async Task InitializeAsync()
     {
@@ -54,12 +57,11 @@ public sealed class WhaleWireMetricsIntegrationFixture : IAsyncLifetime
             }).Build();
 
         var services = new ServiceCollection();
-        services.AddLogging();
+        services.AddLogging(builder => builder.AddProvider(_logCapture));
         services.AddPersistence(_postgresContainer.GetConnectionString());
         services.AddMessaging(configuration, _rabbitMqContainer.GetConnectionString());
         services.AddNotifications();
-        services.AddSingleton<IWhaleWireMetrics, WhaleWireMetrics>();
-
+        services.AddSingleton<IWhaleWireMetrics, NullWhaleWireMetrics>();
         services.Configure<CircuitBreakerOptions>(configuration.GetSection("CircuitBreaker"));
         services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
         services.AddScoped<BlockchainEventHandler>();

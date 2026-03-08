@@ -51,6 +51,7 @@ public sealed class SchedulerService(
     // Fixed event for idempotency testing
     private static readonly BlockchainEvent TestEvent = new()
     {
+        CorrelationId = "scheduler-test",
         EventId = "test-idempotency-event-001",
         Chain = "ton-testnet",
         Provider = "test-provider",
@@ -66,8 +67,8 @@ public sealed class SchedulerService(
         await messagePublisher.PublishAsync(TestEvent, stoppingToken);
         
         logger.LogInformation(
-            "Published CanonicalEventReady with EventId: {EventId}", 
-            TestEvent.EventId);
+            "Published CanonicalEventReady with EventId: {EventId}. CorrelationId: {CorrelationId}",
+            TestEvent.EventId, TestEvent.CorrelationId);
     }
 }
 

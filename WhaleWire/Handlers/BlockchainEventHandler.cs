@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.CircuitBreaker;
 using WhaleWire.Application.Alerts;
+using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Application.Metrics;
 using WhaleWire.Application.Persistence;
@@ -16,6 +17,7 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
     private readonly ICheckpointRepository _checkpointRepository;
     private readonly IAlertEvaluator _alertEvaluator;
     private readonly IAlertNotifier _alertNotifier;
+    private readonly ICorrelationIdAccessor _correlationIdAccessor;
     private readonly ILogger<BlockchainEventHandler> _logger;
     private readonly ResiliencePipeline _circuitBreaker;
 
@@ -24,6 +26,7 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
         ICheckpointRepository checkpointRepository,
         IAlertEvaluator alertEvaluator,
         IAlertNotifier alertNotifier,
+        ICorrelationIdAccessor correlationIdAccessor,
         IWhaleWireMetrics metrics,
         ILogger<BlockchainEventHandler> logger,
         IOptions<CircuitBreakerOptions> options)
@@ -32,6 +35,7 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
         _checkpointRepository = checkpointRepository;
         _alertEvaluator = alertEvaluator;
         _alertNotifier = alertNotifier;
+        _correlationIdAccessor = correlationIdAccessor;
         _logger = logger;
         _circuitBreaker = new ResiliencePipelineBuilder()
             .AddCircuitBreaker(new CircuitBreakerStrategyOptions
@@ -53,8 +57,8 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
     {
         await _circuitBreaker.ExecuteAsync(async ct =>
         {
-            _logger.LogInformation("Received CanonicalEventReady: {EventId} for {Chain}/{Address}",
-                message.EventId, message.Chain, message.Address);
+            _logger.LogInformation("Received CanonicalEventReady: {EventId} for {Chain}/{Address}. CorrelationId: {CorrelationId}",
+                message.EventId, message.Chain, message.Address, _correlationIdAccessor.CorrelationId);
 
             var wasInserted = await _eventRepository.UpsertEventIdempotentAsync(
                 eventId: message.EventId,
@@ -86,8 +90,9 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
 
             _logger.LogInformation(
                 wasInserted
-                    ? "Event {EventId} inserted successfully"
-                    : "Event {EventId} already exists, skipped (idempotent)", message.EventId);
+                    ? "Event {EventId} inserted successfully. CorrelationId: {CorrelationId}"
+                    : "Event {EventId} already exists, skipped (idempotent). CorrelationId: {CorrelationId}",
+                message.EventId, _correlationIdAccessor.CorrelationId);
         }, token);
     }
 }

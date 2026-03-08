@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
 using WhaleWire.Tests.Fakes;
@@ -12,9 +13,13 @@ namespace WhaleWire.Tests.Integration.TestFixtures;
 /// <summary>
 /// WebApplicationFactory that uses Testcontainers for Postgres and RabbitMQ.
 /// Overrides ITopAccountsClient with FakeTopAccountsClient for fast discovery.
+/// Captures logs for CorrelationId E2E verification.
 /// </summary>
 public sealed class WhaleWireWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private readonly LogCaptureProvider _logCapture = new();
+
+    public IReadOnlyList<string> CapturedLogs => _logCapture.Messages;
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17")
         .WithDatabase("whalewire_test")
         .WithUsername("test")
@@ -52,6 +57,11 @@ public sealed class WhaleWireWebApplicationFactory : WebApplicationFactory<Progr
         {
             services.AddScoped<WhaleWire.Application.UseCases.ITopAccountsClient>(
                 _ => new FakeTopAccountsClient(addressCount: 4));
+        });
+
+        builder.ConfigureLogging(logging =>
+        {
+            logging.AddProvider(_logCapture);
         });
     }
 

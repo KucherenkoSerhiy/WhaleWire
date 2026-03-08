@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using RabbitMQ.Client;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Infrastructure.Messaging.Connections;
@@ -27,11 +27,13 @@ public sealed class RabbitMqPublisher(RabbitMqConnection connection): IMessagePu
 
         var body = JsonSerializer.SerializeToUtf8Bytes(message, JsonOptions);
 
+        var correlationId = GetCorrelationId(message) ?? Guid.NewGuid().ToString("N");
         var properties = new BasicProperties
         {
             ContentType = "application/json",
             DeliveryMode = DeliveryModes.Persistent,
-            MessageId = Guid.NewGuid().ToString()
+            MessageId = Guid.NewGuid().ToString(),
+            CorrelationId = correlationId
         };
 
         await channel.BasicPublishAsync(
@@ -41,6 +43,12 @@ public sealed class RabbitMqPublisher(RabbitMqConnection connection): IMessagePu
             basicProperties: properties,
             body: body,
             cancellationToken: token);
+    }
+
+    private static string? GetCorrelationId<T>(T message) where T : class
+    {
+        var prop = typeof(T).GetProperty("CorrelationId");
+        return prop?.GetValue(message) as string;
     }
 
     private static string GetExchangeName<T>() => $"whalewire.{typeof(T).Name.ToLowerInvariant()}";

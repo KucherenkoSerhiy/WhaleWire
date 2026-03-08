@@ -1,10 +1,11 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Infrastructure.Messaging.Configuration;
 using WhaleWire.Infrastructure.Messaging.Connections;
@@ -88,7 +89,7 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
         var consumer = new AsyncEventingBasicConsumer(channel);
         consumer.ReceivedAsync += async (_, eventArgs) =>
         {
-            await ConsumeReceivedEvent(channel, eventArgs.DeliveryTag, eventArgs.Body, stoppingToken);
+            await ConsumeReceivedEvent(channel, eventArgs.DeliveryTag, eventArgs.Body, eventArgs.BasicProperties, stoppingToken);
         };
         
         await channel.BasicConsumeAsync(
@@ -106,20 +107,26 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
     private static string GetRoutingKey() => $"{typeof(T).Name.ToLowerInvariant()}";
 
     private async Task ConsumeReceivedEvent(IChannel channel,
-        ulong deliveryTag, ReadOnlyMemory<byte> messageBody, CancellationToken stoppingToken)
+        ulong deliveryTag, ReadOnlyMemory<byte> messageBody, IReadOnlyBasicProperties basicProperties, CancellationToken stoppingToken)
     {
+        var correlationIdFromHeader = basicProperties.CorrelationId;
+
         try
         {
             var message = JsonSerializer.Deserialize<T>(messageBody.Span, JsonOptions);
             if (message is null)
             {
-                _logger.LogWarning("Failed to deserialize message of type {Type}", typeof(T).Name);
+                _logger.LogWarning("Failed to deserialize message of type {Type}. CorrelationId: {CorrelationId}",
+                    typeof(T).Name, correlationIdFromHeader);
                 await channel.BasicNackAsync(deliveryTag,
                     multiple: false, requeue: false, stoppingToken);
                 return;
             }
 
             using var scope = _scopeFactory.CreateScope();
+            var correlationIdAccessor = scope.ServiceProvider.GetRequiredService<ICorrelationIdAccessor>();
+            correlationIdAccessor.CorrelationId = correlationIdFromHeader ?? GetCorrelationIdFromMessage(message);
+
             var handler = scope.ServiceProvider.GetRequiredService<IMessageConsumer<T>>();
             await handler.HandleAsync(message, stoppingToken);
 
@@ -127,15 +134,21 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
         }
         catch (Exception e)
         {
-            await HandleErrorsAsync(channel, deliveryTag, stoppingToken, e);
+            await HandleErrorsAsync(channel, deliveryTag, correlationIdFromHeader, stoppingToken, e);
         }
+    }
+
+    private static string? GetCorrelationIdFromMessage(T message)
+    {
+        var prop = typeof(T).GetProperty("CorrelationId");
+        return prop?.GetValue(message) as string;
     }
 
     
     // Track retry attempts for delivery tag
     private readonly Dictionary<ulong, int> _retryAttempts = new();
 
-    private async Task HandleErrorsAsync(IChannel channel, ulong deliveryTag, CancellationToken stoppingToken, Exception exception)
+    private async Task HandleErrorsAsync(IChannel channel, ulong deliveryTag, string? correlationId, CancellationToken stoppingToken, Exception exception)
     {
         var attempts = _retryAttempts.GetValueOrDefault(deliveryTag, 0);
         attempts++;
@@ -143,18 +156,20 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
         
         _logger.LogError(
             exception,
-            "Error processing message of type {Type} (attempt {Attempt}/{MaxRetries})",
+            "Error processing message of type {Type} (attempt {Attempt}/{MaxRetries}). CorrelationId: {CorrelationId}",
             typeof(T).Name,
             attempts,
-            _options.MaxRetries);
+            _options.MaxRetries,
+            correlationId);
         
         if (attempts >= _options.MaxRetries)
         {
             // Max retries reached - reject without requeue (goes to dead-letter if configured)
             _logger.LogError(
-                "Message failed {MaxRetries} times, rejecting without requeue. Type: {Type}",
+                "Message failed {MaxRetries} times, rejecting without requeue. Type: {Type}. CorrelationId: {CorrelationId}",
                 _options.MaxRetries,
-                typeof(T).Name);
+                typeof(T).Name,
+                correlationId);
 
             await channel.BasicNackAsync(
                 deliveryTag,
@@ -172,10 +187,11 @@ public sealed class RabbitMqConsumerService<T> : BackgroundService where T : cla
                 : _options.RetryDelays[^1];
 
             _logger.LogWarning(
-                "Requeuing message after {Delay}s delay (attempt {Attempt}/{MaxRetries})",
+                "Requeuing message after {Delay}s delay (attempt {Attempt}/{MaxRetries}). CorrelationId: {CorrelationId}",
                 delay.TotalSeconds,
                 attempts,
-                _options.MaxRetries);
+                _options.MaxRetries,
+                correlationId);
 
             await Task.Delay(delay, stoppingToken);
 

@@ -6,6 +6,7 @@ namespace WhaleWire.Tests.Integration;
 /// <summary>
 /// E2E tests that hit /metrics and verify WhaleWire metrics appear.
 /// </summary>
+[Collection("DiscoveryMetrics")]
 public sealed class MetricsEndpointE2ETests(WhaleWireWebApplicationFactory factory)
     : IClassFixture<WhaleWireWebApplicationFactory>
 {

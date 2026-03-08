@@ -87,9 +87,8 @@ public sealed class DiscoveryWithMockTonCenterFixture : IAsyncLifetime
             });
 
         Host = hostBuilder.Build();
-        await Host.StartAsync();
-
         await ApplyMigrationsAsync();
+        await Host.StartAsync();
     }
 
     private async Task ApplyMigrationsAsync()

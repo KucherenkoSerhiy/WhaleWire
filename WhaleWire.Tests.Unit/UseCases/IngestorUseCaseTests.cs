@@ -81,7 +81,7 @@ public sealed class IngestorUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithEvents_PublishesEachEvent()
+    public async Task ExecuteAsync_WithEvents_PublishesEachEventWithCorrelationId()
     {
         var events = new List<BlockchainEvent>
         {
@@ -100,8 +100,12 @@ public sealed class IngestorUseCaseTests
 
         count.Should().Be(2);
         await _messagePublisher.Received(2).PublishAsync(Arg.Any<BlockchainEvent>(), Arg.Any<CancellationToken>());
-        await _messagePublisher.Received(1).PublishAsync(events[0], Arg.Any<CancellationToken>());
-        await _messagePublisher.Received(1).PublishAsync(events[1], Arg.Any<CancellationToken>());
+        await _messagePublisher.Received(1).PublishAsync(
+            Arg.Is<BlockchainEvent>(e => e.EventId == "event1" && e.CorrelationId != null && e.CorrelationId.Length == 32),
+            Arg.Any<CancellationToken>());
+        await _messagePublisher.Received(1).PublishAsync(
+            Arg.Is<BlockchainEvent>(e => e.EventId == "event2" && e.CorrelationId != null && e.CorrelationId.Length == 32),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

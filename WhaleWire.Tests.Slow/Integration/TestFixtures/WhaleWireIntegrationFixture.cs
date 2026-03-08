@@ -4,10 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
+using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Metrics;
 using WhaleWire.Configuration;
 using WhaleWire.Handlers;
 using WhaleWire.Infrastructure.Messaging;
+using WhaleWire.Infrastructure.Messaging.CorrelationId;
 using WhaleWire.Infrastructure.Notifications;
 using WhaleWire.Infrastructure.Persistence;
 
@@ -55,6 +57,7 @@ public class WhaleWireIntegrationFixture : IAsyncLifetime
 
         // Register handler + config
         services.Configure<CircuitBreakerOptions>(configuration.GetSection("CircuitBreaker"));
+        services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
         services.AddScoped<BlockchainEventHandler>();
 
         Services = services.BuildServiceProvider();

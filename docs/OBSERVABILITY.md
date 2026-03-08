@@ -13,7 +13,7 @@
 | `whalewire_discovery_addresses_total` | Done |
 | `whalewire_discovery_last_success_timestamp_seconds` | Done |
 | Alerting rules | Done |
-| Correlation IDs | Pending |
+| Correlation IDs | Done |
 
 **Evidence:** Discovery failure test, HTTP-mocked TonCenter test, `/metrics` E2E test (`MetricsEndpointE2ETests`), `whalewire_discovery_last_success_timestamp_seconds` E2E assertion, Prometheus rules validation (`PrometheusRulesValidationTests` via promtool).
 
@@ -66,11 +66,21 @@
 
 ---
 
-### 3. Correlation IDs (required)
+### 3. Correlation IDs (required) — Done
 
 - Add trace/correlation ID to each event flow (ingestion → publish → consume → handler).
 - Log it in every relevant log line.
 - Enables: "Find all logs for event X" without grep.
+
+**Implementation:** B (in `BlockchainEvent`) + C (RabbitMQ `BasicProperties.CorrelationId`). `ICorrelationIdAccessor` scoped for handler/notifier. Set at publish in `IngestorUseCase`; consumer reads from header or message body.
+
+**Evidence:**
+- `IngestorUseCaseTests.ExecuteAsync_WithEvents_PublishesEachEventWithCorrelationId` — publishes events with non-null 32-char CorrelationId
+- `BlockchainEventHandlerTests.HandleAsync_LogsCorrelationIdFromAccessor` — handler logs CorrelationId from scoped accessor
+- `ConsoleAlertNotifierTests.NotifyAsync_LogsAlertWithWarningLevelAndCorrelationId` — notifier logs CorrelationId in whale alerts
+- `AlertEvaluatorTests.EvaluateAsync_InvalidJson_LogsCorrelationId` — evaluator logs CorrelationId on RawJson parse failure
+- `CorrelationIdE2ETests.PublishViaRabbitMQ_EventProcessedEndToEnd` — E2E verifies full pipeline (Publisher → RabbitMQ → Consumer → Handler → DB)
+- `CorrelationIdHandlerIntegrationTests.HandlerInvokedWithCorrelationId_CorrelationIdAppearsInCapturedLogs` — integration test proves handler logs CorrelationId when accessor is set (real handler, real DB)
 
 ---
 
@@ -81,6 +91,14 @@
 | **OpenTelemetry tracing** | Spans across ingestion → handler → alert |
 | **Structured logging sink** | JSON logs to Seq/ELK/Loki |
 | **Grafana dashboard** | Pre-built dashboard for the metrics above |
+
+---
+
+## Future
+
+| Item | Notes |
+|------|-------|
+| **Alertmanager receivers** | Alerts show in UI (localhost:9093) but are not delivered. Add `webhook_configs`, `slack_configs`, or `pagerduty_configs` to `prometheus/alertmanager.yml` for Slack, PagerDuty, etc. Environment-specific. |
 
 ---
 

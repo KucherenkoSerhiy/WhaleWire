@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Infrastructure.Messaging.Configuration;
 using WhaleWire.Infrastructure.Messaging.Connections;
 using WhaleWire.Infrastructure.Messaging.Consumers;
+using WhaleWire.Infrastructure.Messaging.CorrelationId;
 using WhaleWire.Infrastructure.Messaging.Publishers;
 
 namespace WhaleWire.Infrastructure.Messaging;
@@ -29,6 +31,7 @@ public static class DependencyInjection
             where TMessage : class
             where THandler : class, IMessageConsumer<TMessage>
         {
+            services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
             services.AddScoped<IMessageConsumer<TMessage>, THandler>();
             services.AddHostedService<RabbitMqConsumerService<TMessage>>();
             return services;

@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using WhaleWire.Application.Alerts;
+using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Metrics;
 using WhaleWire.Application.Messaging;
 using WhaleWire.Application.Persistence;
@@ -24,10 +26,13 @@ public sealed class BlockchainEventHandlerTests
     private readonly Mock<ICheckpointRepository> _checkpointRepoMock = new();
     private readonly Mock<IAlertEvaluator> _alertEvaluatorMock = new();
     private readonly Mock<IAlertNotifier> _alertNotifierMock = new();
+    private readonly Mock<ICorrelationIdAccessor> _correlationIdAccessorMock = new();
     private readonly BlockchainEventHandler _handler;
 
     public BlockchainEventHandlerTests()
     {
+        _correlationIdAccessorMock.Setup(x => x.CorrelationId).Returns("test-correlation-id");
+
         var options = Options.Create(new CircuitBreakerOptions
         {
             ExceptionsAllowedBeforeBreaking = 5,
@@ -39,9 +44,41 @@ public sealed class BlockchainEventHandlerTests
             _checkpointRepoMock.Object,
             _alertEvaluatorMock.Object,
             _alertNotifierMock.Object,
+            _correlationIdAccessorMock.Object,
             new NullWhaleWireMetrics(),
             NullLogger<BlockchainEventHandler>.Instance,
             options);
+    }
+
+    [Fact]
+    public async Task HandleAsync_LogsCorrelationIdFromAccessor()
+    {
+        var loggerMock = new Mock<ILogger<BlockchainEventHandler>>();
+        var handlerWithLogger = new BlockchainEventHandler(
+            _eventRepoMock.Object,
+            _checkpointRepoMock.Object,
+            _alertEvaluatorMock.Object,
+            _alertNotifierMock.Object,
+            _correlationIdAccessorMock.Object,
+            new NullWhaleWireMetrics(),
+            loggerMock.Object,
+            Options.Create(new CircuitBreakerOptions { ExceptionsAllowedBeforeBreaking = 5, DurationOfBreakMinutes = 1 }));
+
+        _eventRepoMock.Setup(x => x.UpsertEventIdempotentAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _alertEvaluatorMock.Setup(x => x.EvaluateAsync(It.IsAny<BlockchainEvent>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Alert>());
+
+        await handlerWithLogger.HandleAsync(CreateTestEvent());
+
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("test-correlation-id")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
     }
 
     [Fact]

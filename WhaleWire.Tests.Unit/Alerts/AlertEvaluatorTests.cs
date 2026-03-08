@@ -1,5 +1,7 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using WhaleWire.Application.Alerts;
 using WhaleWire.Domain;
 using WhaleWire.Messages;
@@ -149,6 +151,25 @@ public sealed class AlertEvaluatorTests
     }
 
     [Fact]
+    public async Task EvaluateAsync_InvalidJson_LogsCorrelationId()
+    {
+        var loggerMock = new Mock<ILogger<AlertEvaluator>>();
+        var evaluator = new AlertEvaluator(loggerMock.Object);
+        var evt = CreateEvent("{ invalid json }", correlationId: "parse-fail-correlation-id");
+
+        await evaluator.EvaluateAsync(evt);
+
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("parse-fail-correlation-id")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task EvaluateAsync_NoValueField_ReturnsEmpty()
     {
         // Arrange
@@ -245,7 +266,7 @@ public sealed class AlertEvaluatorTests
         alerts[0].Amount.Should().Be(100m);
     }
 
-    private static BlockchainEvent CreateEvent(string rawJson)
+    private static BlockchainEvent CreateEvent(string rawJson, string? correlationId = null)
     {
         return new BlockchainEvent
         {
@@ -253,6 +274,7 @@ public sealed class AlertEvaluatorTests
             Chain = "ton",
             Provider = "tonapi",
             Address = TestAddress,
+            CorrelationId = correlationId,
             Cursor = new Cursor(1000, "hash"),
             OccurredAt = DateTime.UtcNow,
             RawJson = rawJson

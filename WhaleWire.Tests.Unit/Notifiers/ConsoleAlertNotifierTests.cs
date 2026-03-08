@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WhaleWire.Application.Alerts;
+using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Metrics;
 using WhaleWire.Infrastructure.Notifications.Notifiers;
 
@@ -10,15 +11,17 @@ namespace WhaleWire.Tests.Unit.Notifiers;
 public sealed class ConsoleAlertNotifierTests
 {
     private readonly Mock<ILogger<ConsoleAlertNotifier>> _loggerMock = new();
+    private readonly Mock<ICorrelationIdAccessor> _correlationIdAccessorMock = new();
     private readonly ConsoleAlertNotifier _notifier;
 
     public ConsoleAlertNotifierTests()
     {
-        _notifier = new ConsoleAlertNotifier(_loggerMock.Object, new NullWhaleWireMetrics());
+        _correlationIdAccessorMock.Setup(x => x.CorrelationId).Returns("test-correlation-id");
+        _notifier = new ConsoleAlertNotifier(_loggerMock.Object, _correlationIdAccessorMock.Object, new NullWhaleWireMetrics());
     }
 
     [Fact]
-    public async Task NotifyAsync_LogsAlertWithWarningLevel()
+    public async Task NotifyAsync_LogsAlertWithWarningLevelAndCorrelationId()
     {
         // Arrange
         var alert = new Alert(
@@ -31,15 +34,28 @@ public sealed class ConsoleAlertNotifierTests
         // Act
         await _notifier.NotifyAsync(alert);
 
-        // Assert
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Warning,
+        // Assert - structured logging: capture formatter output to verify CorrelationId
+        var logCalls = 0;
+        string? formattedMessage = null;
+        _loggerMock.Setup(x => x.Log(
+                It.IsAny<LogLevel>(),
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("WHALE ALERT")),
+                It.IsAny<It.IsAnyType>(),
                 It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
+            .Callback<LogLevel, EventId, object?, Exception?, Delegate>((_, _, state, _, formatter) =>
+            {
+                logCalls++;
+                if (formatter is Delegate d && state != null)
+                    formattedMessage = d.DynamicInvoke(state, null)?.ToString();
+            });
+
+        // Act (notifier was already created in ctor; Setup captures when it logs)
+        await _notifier.NotifyAsync(alert);
+
+        logCalls.Should().Be(1);
+        formattedMessage.Should().Contain("WHALE ALERT");
+        formattedMessage.Should().Contain("test-correlation-id");
     }
 
     [Fact]

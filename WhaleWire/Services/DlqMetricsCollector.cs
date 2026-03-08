@@ -23,6 +23,8 @@ public sealed class DlqMetricsCollector(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try

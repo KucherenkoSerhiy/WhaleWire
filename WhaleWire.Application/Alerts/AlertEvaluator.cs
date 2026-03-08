@@ -37,7 +37,8 @@ public sealed class AlertEvaluator(ILogger<AlertEvaluator> logger) : IAlertEvalu
         }
         catch (JsonException ex)
         {
-            logger.LogWarning(ex, "Failed to parse RawJson for event {EventId}", blockchainEvent.EventId);
+            logger.LogWarning(ex, "Failed to parse RawJson for event {EventId}. CorrelationId: {CorrelationId}",
+                blockchainEvent.EventId, blockchainEvent.CorrelationId);
         }
 
         return Task.FromResult<IReadOnlyList<Alert>>(alerts);
