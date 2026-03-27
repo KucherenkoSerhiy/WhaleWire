@@ -17,6 +17,7 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
     private readonly ICheckpointRepository _checkpointRepository;
     private readonly IAlertEvaluator _alertEvaluator;
     private readonly IAlertNotifier _alertNotifier;
+    private readonly IWhaleDecisionAuditLogger _whaleDecisionAudit;
     private readonly ICorrelationIdAccessor _correlationIdAccessor;
     private readonly ILogger<BlockchainEventHandler> _logger;
     private readonly ResiliencePipeline _circuitBreaker;
@@ -26,6 +27,7 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
         ICheckpointRepository checkpointRepository,
         IAlertEvaluator alertEvaluator,
         IAlertNotifier alertNotifier,
+        IWhaleDecisionAuditLogger whaleDecisionAudit,
         ICorrelationIdAccessor correlationIdAccessor,
         IWhaleWireMetrics metrics,
         ILogger<BlockchainEventHandler> logger,
@@ -35,6 +37,7 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
         _checkpointRepository = checkpointRepository;
         _alertEvaluator = alertEvaluator;
         _alertNotifier = alertNotifier;
+        _whaleDecisionAudit = whaleDecisionAudit;
         _correlationIdAccessor = correlationIdAccessor;
         _logger = logger;
         _circuitBreaker = new ResiliencePipelineBuilder()
@@ -81,8 +84,15 @@ public sealed class BlockchainEventHandler : IMessageConsumer<BlockchainEvent>
                     ct);
 
                 // Evaluate and send alerts for new events
-                var alerts = await _alertEvaluator.EvaluateAsync(message, ct);
-                foreach (var alert in alerts)
+                var evaluation = await _alertEvaluator.EvaluateAsync(message, ct);
+                if (!evaluation.JsonParseFailed && evaluation.Alerts.Count == 0)
+                {
+                    _whaleDecisionAudit.Log(WhaleDecisionRecord.ForNoQualifyingTransfer(
+                        message,
+                        _correlationIdAccessor.CorrelationId));
+                }
+
+                foreach (var alert in evaluation.Alerts)
                 {
                     await _alertNotifier.NotifyAsync(alert, ct);
                 }

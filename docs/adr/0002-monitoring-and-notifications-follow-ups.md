@@ -24,17 +24,9 @@ Record the implemented choice in code comments or here when done.
 
 ## Structured logging for whale decisions
 
-**Goal:** one machine-readable record per **outcome** (sent, suppressed, failed) for support and tuning, without parsing console text.
+**Implemented (baseline):** `IWhaleDecisionAuditLogger` + `WhaleDecisionRecord` in `WhaleWire.Application`, `WhaleDecisionAuditLogger` logs one camelCase JSON line per call at **Information** (`{WhaleDecision}`). Outcomes: **`sent`** (`ConsoleAlertNotifier`, channel `console`), **`suppressed`** (`no_qualifying_transfer` when a new event yields zero alerts), **`failed`** (`raw_json_parse_error` on `RawJson` parse failure). Stable reason codes: `WhaleDecisionReasonCodes`. `IAlertEvaluator` returns `AlertEvaluationResult` so parse failures do not also emit a suppressed line.
 
-**Shape to finalize in implementation:**
-
-- When: UTC timestamp, stable `category` (e.g. `whale_decision`).
-- Traceability: `correlation_id`, `event_id` when present.
-- Business: address, chain, direction, notional, asset.
-- Outcome: `sent` | `suppressed` | `failed` plus a small `reason_code` set (`below_threshold`, `dedupe`, `quiet_hours`, `rate_limited`, `notifier_error`, …).
-- Channel: e.g. `console` until another notifier ships.
-
-Prefer **one JSON object per line** (JSONL) for later Loki/ELK. Log level: at least **info** for sent; suppressed can be **debug** or **info** depending on volume after caps.
+**Extensions later:** dedupe / quiet hours / rate limit reason codes; optional **Debug** for high-volume suppress paths.
 
 ## Twitter as the human notifier (later)
 

@@ -5,12 +5,14 @@ using WhaleWire.Messages;
 
 namespace WhaleWire.Application.Alerts;
 
-public sealed class AlertEvaluator(ILogger<AlertEvaluator> logger) : IAlertEvaluator
+public sealed class AlertEvaluator(
+    ILogger<AlertEvaluator> logger,
+    IWhaleDecisionAuditLogger whaleDecisionAudit) : IAlertEvaluator
 {
     private const decimal TonDecimals = 1_000_000_000m; // 9 decimals for TON
     private const decimal ThresholdTon = 100m; // 100 TON threshold
 
-    public Task<IReadOnlyList<Alert>> EvaluateAsync(
+    public Task<AlertEvaluationResult> EvaluateAsync(
         BlockchainEvent blockchainEvent,
         CancellationToken ct = default)
     {
@@ -39,9 +41,11 @@ public sealed class AlertEvaluator(ILogger<AlertEvaluator> logger) : IAlertEvalu
         {
             logger.LogWarning(ex, "Failed to parse RawJson for event {EventId}. CorrelationId: {CorrelationId}",
                 blockchainEvent.EventId, blockchainEvent.CorrelationId);
+            whaleDecisionAudit.Log(WhaleDecisionRecord.ForRawJsonParseError(blockchainEvent));
+            return Task.FromResult(AlertEvaluationResult.ParseFailed());
         }
 
-        return Task.FromResult<IReadOnlyList<Alert>>(alerts);
+        return Task.FromResult(AlertEvaluationResult.Success(alerts));
     }
 
     private List<Alert> EvaluateTransaction(JsonElement tx, BlockchainEvent evt)
@@ -114,7 +118,12 @@ public sealed class AlertEvaluator(ILogger<AlertEvaluator> logger) : IAlertEvalu
             WalletAddress: evt.Address,
             Amount: amountTon,
             Direction: direction,
-            Message: message);
+            Message: message,
+            EventId: evt.EventId,
+            Chain: evt.Chain,
+            Address: evt.Address,
+            Provider: evt.Provider,
+            CorrelationId: evt.CorrelationId);
     }
 
     private static string FormatAddress(string address)

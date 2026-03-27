@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Polly.CircuitBreaker;
 using Prometheus;
+using WhaleWire.Application.Alerts;
 using WhaleWire.Application.CorrelationId;
 using WhaleWire.Application.Metrics;
 using WhaleWire.Application.Persistence;
@@ -97,6 +98,7 @@ public sealed class CircuitBreakerMetricTests
             checkpointRepoMock.Object,
             alertEvaluatorMock.Object,
             alertNotifierMock.Object,
+            NullWhaleDecisionAuditLogger.Instance,
             correlationIdAccessorMock.Object,
             metrics,
             NullLogger<BlockchainEventHandler>.Instance,

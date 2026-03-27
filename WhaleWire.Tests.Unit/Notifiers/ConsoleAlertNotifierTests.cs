@@ -12,56 +12,60 @@ public sealed class ConsoleAlertNotifierTests
 {
     private readonly Mock<ILogger<ConsoleAlertNotifier>> _loggerMock = new();
     private readonly Mock<ICorrelationIdAccessor> _correlationIdAccessorMock = new();
+    private readonly Mock<IWhaleDecisionAuditLogger> _whaleAuditMock = new();
     private readonly ConsoleAlertNotifier _notifier;
 
     public ConsoleAlertNotifierTests()
     {
         _correlationIdAccessorMock.Setup(x => x.CorrelationId).Returns("test-correlation-id");
-        _notifier = new ConsoleAlertNotifier(_loggerMock.Object, _correlationIdAccessorMock.Object, new NullWhaleWireMetrics());
+        _notifier = new ConsoleAlertNotifier(
+            _loggerMock.Object,
+            _correlationIdAccessorMock.Object,
+            new NullWhaleWireMetrics(),
+            _whaleAuditMock.Object);
     }
 
     [Fact]
-    public async Task NotifyAsync_LogsAlertWithWarningLevelAndCorrelationId()
+    public async Task NotifyAsync_LogsHumanWhaleLineAndAuditSent()
     {
-        // Arrange
         var alert = new Alert(
             AssetId: "TON",
             WalletAddress: "0:1234567890ABCDEF",
             Amount: 150m,
             Direction: "IN",
-            Message: "Large transfer detected");
+            Message: "Large transfer detected",
+            EventId: "evt-1",
+            Chain: "ton",
+            Address: "0:1234567890ABCDEF",
+            Provider: "tonapi",
+            CorrelationId: "test-correlation-id");
 
-        // Act
         await _notifier.NotifyAsync(alert);
 
-        // Assert - structured logging: capture formatter output to verify CorrelationId
-        var logCalls = 0;
-        string? formattedMessage = null;
-        _loggerMock.Setup(x => x.Log(
-                It.IsAny<LogLevel>(),
+        _whaleAuditMock.Verify(
+            x => x.Log(It.Is<WhaleDecisionRecord>(r =>
+                r.Outcome == "sent"
+                && r.Channel == "console"
+                && r.EventId == "evt-1"
+                && r.CorrelationId == "test-correlation-id"
+                && r.AssetId == "TON"
+                && r.Direction == "IN"
+                && r.Amount == 150m)),
+            Times.Once);
+
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
                 It.IsAny<EventId>(),
                 It.IsAny<It.IsAnyType>(),
                 It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object?, Exception?, Delegate>((_, _, state, _, formatter) =>
-            {
-                logCalls++;
-                if (formatter is Delegate d && state != null)
-                    formattedMessage = d.DynamicInvoke(state, null)?.ToString();
-            });
-
-        // Act (notifier was already created in ctor; Setup captures when it logs)
-        await _notifier.NotifyAsync(alert);
-
-        logCalls.Should().Be(1);
-        formattedMessage.Should().Contain("WHALE ALERT");
-        formattedMessage.Should().Contain("test-correlation-id");
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Fact]
     public async Task NotifyAsync_CompletesSuccessfully()
     {
-        // Arrange
         var alert = new Alert(
             AssetId: "TON",
             WalletAddress: "0:TEST",
@@ -69,10 +73,8 @@ public sealed class ConsoleAlertNotifierTests
             Direction: "OUT",
             Message: "Test");
 
-        // Act
         var act = async () => await _notifier.NotifyAsync(alert);
 
-        // Assert
         await act.Should().NotThrowAsync();
     }
 }

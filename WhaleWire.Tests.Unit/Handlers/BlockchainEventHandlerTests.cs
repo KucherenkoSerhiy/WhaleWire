@@ -44,6 +44,7 @@ public sealed class BlockchainEventHandlerTests
             _checkpointRepoMock.Object,
             _alertEvaluatorMock.Object,
             _alertNotifierMock.Object,
+            NullWhaleDecisionAuditLogger.Instance,
             _correlationIdAccessorMock.Object,
             new NullWhaleWireMetrics(),
             NullLogger<BlockchainEventHandler>.Instance,
@@ -59,6 +60,7 @@ public sealed class BlockchainEventHandlerTests
             _checkpointRepoMock.Object,
             _alertEvaluatorMock.Object,
             _alertNotifierMock.Object,
+            NullWhaleDecisionAuditLogger.Instance,
             _correlationIdAccessorMock.Object,
             new NullWhaleWireMetrics(),
             loggerMock.Object,
@@ -67,7 +69,7 @@ public sealed class BlockchainEventHandlerTests
         _eventRepoMock.Setup(x => x.UpsertEventIdempotentAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _alertEvaluatorMock.Setup(x => x.EvaluateAsync(It.IsAny<BlockchainEvent>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Alert>());
+            .ReturnsAsync(AlertEvaluationResult.Success(new List<Alert>()));
 
         await handlerWithLogger.HandleAsync(CreateTestEvent());
 
@@ -100,7 +102,7 @@ public sealed class BlockchainEventHandlerTests
 
         _alertEvaluatorMock
             .Setup(x => x.EvaluateAsync(It.IsAny<BlockchainEvent>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Alert>());
+            .ReturnsAsync(AlertEvaluationResult.Success(new List<Alert>()));
 
         // Act
         await _handler.HandleAsync(evt);
@@ -180,7 +182,7 @@ public sealed class BlockchainEventHandlerTests
 
         _alertEvaluatorMock
             .Setup(x => x.EvaluateAsync(evt, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Alert>());
+            .ReturnsAsync(AlertEvaluationResult.Success(new List<Alert>()));
 
         // Act
         await _handler.HandleAsync(evt);
@@ -216,7 +218,7 @@ public sealed class BlockchainEventHandlerTests
 
         _alertEvaluatorMock
             .Setup(x => x.EvaluateAsync(It.IsAny<BlockchainEvent>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(alerts);
+            .ReturnsAsync(AlertEvaluationResult.Success(alerts));
 
         // Act
         await _handler.HandleAsync(evt);
@@ -258,6 +260,54 @@ public sealed class BlockchainEventHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_NewEventWithNoAlerts_LogsSuppressedWhaleDecision()
+    {
+        var auditMock = new Mock<IWhaleDecisionAuditLogger>();
+        var evt = CreateTestEvent();
+        _eventRepoMock
+            .Setup(x => x.UpsertEventIdempotentAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<long>(),
+                It.IsAny<string>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        _alertEvaluatorMock
+            .Setup(x => x.EvaluateAsync(It.IsAny<BlockchainEvent>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AlertEvaluationResult.Success(new List<Alert>()));
+
+        var options = Options.Create(new CircuitBreakerOptions
+        {
+            ExceptionsAllowedBeforeBreaking = 5,
+            DurationOfBreakMinutes = 1
+        });
+
+        var handler = new BlockchainEventHandler(
+            _eventRepoMock.Object,
+            _checkpointRepoMock.Object,
+            _alertEvaluatorMock.Object,
+            _alertNotifierMock.Object,
+            auditMock.Object,
+            _correlationIdAccessorMock.Object,
+            new NullWhaleWireMetrics(),
+            NullLogger<BlockchainEventHandler>.Instance,
+            options);
+
+        await handler.HandleAsync(evt);
+
+        auditMock.Verify(
+            x => x.Log(It.Is<WhaleDecisionRecord>(r =>
+                r.Outcome == "suppressed"
+                && r.ReasonCode == WhaleDecisionReasonCodes.NoQualifyingTransfer
+                && r.EventId == TestEventId)),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task HandleAsync_NewEventWithNoAlerts_DoesNotNotify()
     {
         // Arrange
@@ -276,7 +326,7 @@ public sealed class BlockchainEventHandlerTests
 
         _alertEvaluatorMock
             .Setup(x => x.EvaluateAsync(It.IsAny<BlockchainEvent>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Alert>());
+            .ReturnsAsync(AlertEvaluationResult.Success(new List<Alert>()));
 
         // Act
         await _handler.HandleAsync(evt);

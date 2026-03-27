@@ -4,8 +4,8 @@ namespace WhaleWire.Application.Alerts;
 
 public interface IAlertEvaluator
 {
-    Task<IReadOnlyList<Alert>> EvaluateAsync(
-        BlockchainEvent blockchainEvent, 
+    Task<AlertEvaluationResult> EvaluateAsync(
+        BlockchainEvent blockchainEvent,
         CancellationToken ct = default);
 }
 
@@ -14,4 +14,9 @@ public sealed record Alert(
     string WalletAddress,
     decimal Amount,
     string Direction,
-    string Message);
+    string Message,
+    string? EventId = null,
+    string? Chain = null,
+    string? Address = null,
+    string? Provider = null,
+    string? CorrelationId = null);

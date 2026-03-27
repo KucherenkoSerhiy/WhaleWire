@@ -9,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddNotifications(
         this IServiceCollection services)
     {
+        services.AddScoped<IWhaleDecisionAuditLogger, WhaleDecisionAuditLogger>();
         services.AddScoped<IAlertEvaluator, AlertEvaluator>();
         services.AddScoped<IAlertNotifier, ConsoleAlertNotifier>();
 

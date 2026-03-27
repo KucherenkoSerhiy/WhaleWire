@@ -82,6 +82,7 @@
 - `BlockchainEventHandlerTests.HandleAsync_LogsCorrelationIdFromAccessor` — handler logs CorrelationId from scoped accessor
 - `ConsoleAlertNotifierTests.NotifyAsync_LogsAlertWithWarningLevelAndCorrelationId` — notifier logs CorrelationId in whale alerts
 - `AlertEvaluatorTests.EvaluateAsync_InvalidJson_LogsCorrelationId` — evaluator logs CorrelationId on RawJson parse failure
+- Whale decision audit JSON (ADR 0002): `WhaleDecisionAuditLogger` / `WhaleDecisionRecord` — `sent`, `suppressed` (`no_qualifying_transfer`), `failed` (`raw_json_parse_error`); covered by notifier, handler, and evaluator unit tests
 - `CorrelationIdE2ETests.PublishViaRabbitMQ_EventProcessedEndToEnd` — E2E verifies full pipeline (Publisher → RabbitMQ → Consumer → Handler → DB)
 - `CorrelationIdHandlerIntegrationTests.HandlerInvokedWithCorrelationId_CorrelationIdAppearsInCapturedLogs` — integration test proves handler logs CorrelationId when accessor is set (real handler, real DB)
 

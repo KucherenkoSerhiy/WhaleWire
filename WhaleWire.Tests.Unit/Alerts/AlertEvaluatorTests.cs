@@ -13,7 +13,9 @@ public sealed class AlertEvaluatorTests
     private const string TestAddress = "0:TEST123";
     private const string TestEventId = "test-001";
     
-    private readonly AlertEvaluator _evaluator = new(NullLogger<AlertEvaluator>.Instance);
+    private readonly AlertEvaluator _evaluator = new(
+        NullLogger<AlertEvaluator>.Instance,
+        NullWhaleDecisionAuditLogger.Instance);
 
     [Fact]
     public async Task EvaluateAsync_LargeIncomingTransfer_ReturnsAlert()
@@ -30,15 +32,15 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().HaveCount(1);
-        alerts[0].AssetId.Should().Be("TON");
-        alerts[0].WalletAddress.Should().Be(TestAddress);
-        alerts[0].Direction.Should().Be("IN");
-        alerts[0].Amount.Should().Be(150m);
-        alerts[0].Message.Should().Contain("Received from");
+        result.Alerts.Should().HaveCount(1);
+        result.Alerts[0].AssetId.Should().Be("TON");
+        result.Alerts[0].WalletAddress.Should().Be(TestAddress);
+        result.Alerts[0].Direction.Should().Be("IN");
+        result.Alerts[0].Amount.Should().Be(150m);
+        result.Alerts[0].Message.Should().Contain("Received from");
     }
 
     [Fact]
@@ -58,14 +60,14 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().HaveCount(1);
-        alerts[0].AssetId.Should().Be("TON");
-        alerts[0].Direction.Should().Be("OUT");
-        alerts[0].Amount.Should().Be(250m);
-        alerts[0].Message.Should().Contain("Sent to");
+        result.Alerts.Should().HaveCount(1);
+        result.Alerts[0].AssetId.Should().Be("TON");
+        result.Alerts[0].Direction.Should().Be("OUT");
+        result.Alerts[0].Amount.Should().Be(250m);
+        result.Alerts[0].Message.Should().Contain("Sent to");
     }
 
     [Fact]
@@ -81,10 +83,10 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().BeEmpty();
+        result.Alerts.Should().BeEmpty();
     }
 
     [Fact]
@@ -104,11 +106,11 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().HaveCount(1);
-        alerts[0].Amount.Should().Be(200m);
+        result.Alerts.Should().HaveCount(1);
+        result.Alerts[0].Amount.Should().Be(200m);
     }
 
     [Fact]
@@ -129,12 +131,12 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().HaveCount(2);
-        alerts[0].Amount.Should().Be(150m);
-        alerts[1].Amount.Should().Be(200m);
+        result.Alerts.Should().HaveCount(2);
+        result.Alerts[0].Amount.Should().Be(150m);
+        result.Alerts[1].Amount.Should().Be(200m);
     }
 
     [Fact]
@@ -144,17 +146,18 @@ public sealed class AlertEvaluatorTests
         var evt = CreateEvent("{ invalid json }");
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().BeEmpty();
+        result.Alerts.Should().BeEmpty();
+        result.JsonParseFailed.Should().BeTrue();
     }
 
     [Fact]
     public async Task EvaluateAsync_InvalidJson_LogsCorrelationId()
     {
         var loggerMock = new Mock<ILogger<AlertEvaluator>>();
-        var evaluator = new AlertEvaluator(loggerMock.Object);
+        var evaluator = new AlertEvaluator(loggerMock.Object, NullWhaleDecisionAuditLogger.Instance);
         var evt = CreateEvent("{ invalid json }", correlationId: "parse-fail-correlation-id");
 
         await evaluator.EvaluateAsync(evt);
@@ -166,6 +169,24 @@ public sealed class AlertEvaluatorTests
                 It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("parse-fail-correlation-id")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_InvalidJson_WritesWhaleDecisionAudit()
+    {
+        var auditMock = new Mock<IWhaleDecisionAuditLogger>();
+        var evaluator = new AlertEvaluator(NullLogger<AlertEvaluator>.Instance, auditMock.Object);
+        var evt = CreateEvent("{ invalid json }", correlationId: "audit-corr");
+
+        await evaluator.EvaluateAsync(evt);
+
+        auditMock.Verify(
+            x => x.Log(It.Is<WhaleDecisionRecord>(r =>
+                r.Outcome == "failed"
+                && r.ReasonCode == WhaleDecisionReasonCodes.RawJsonParseError
+                && r.EventId == TestEventId
+                && r.CorrelationId == "audit-corr")),
             Times.Once);
     }
 
@@ -182,10 +203,10 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().BeEmpty();
+        result.Alerts.Should().BeEmpty();
     }
 
     [Fact]
@@ -201,10 +222,10 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().BeEmpty();
+        result.Alerts.Should().BeEmpty();
     }
 
     [Fact]
@@ -221,11 +242,11 @@ public sealed class AlertEvaluatorTests
             }
             """);
 
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
-        alerts.Should().HaveCount(1);
-        alerts[0].Amount.Should().Be(150m);
-        alerts[0].Message.Should().Contain("0:EQD0vdQ_");
+        result.Alerts.Should().HaveCount(1);
+        result.Alerts[0].Amount.Should().Be(150m);
+        result.Alerts[0].Message.Should().Contain("0:EQD0vdQ_");
     }
 
     [Fact]
@@ -240,10 +261,10 @@ public sealed class AlertEvaluatorTests
             }
             """);
 
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
-        alerts.Should().HaveCount(1);
-        alerts[0].Amount.Should().Be(250m);
+        result.Alerts.Should().HaveCount(1);
+        result.Alerts[0].Amount.Should().Be(250m);
     }
 
     [Fact]
@@ -259,11 +280,11 @@ public sealed class AlertEvaluatorTests
             """);
 
         // Act
-        var alerts = await _evaluator.EvaluateAsync(evt);
+        var result = await _evaluator.EvaluateAsync(evt);
 
         // Assert
-        alerts.Should().HaveCount(1);
-        alerts[0].Amount.Should().Be(100m);
+        result.Alerts.Should().HaveCount(1);
+        result.Alerts[0].Amount.Should().Be(100m);
     }
 
     private static BlockchainEvent CreateEvent(string rawJson, string? correlationId = null)

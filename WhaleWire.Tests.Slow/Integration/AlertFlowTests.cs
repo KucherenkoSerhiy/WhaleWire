@@ -20,12 +20,12 @@ public sealed class AlertFlowTests(WhaleWireIntegrationFixture fixture)
         var largeTransferEvent = CreateLargeTransferEvent();
 
         // Act
-        var alerts = await alertEvaluator.EvaluateAsync(largeTransferEvent);
+        var result = await alertEvaluator.EvaluateAsync(largeTransferEvent);
 
         // Assert
-        alerts.Should().NotBeEmpty();
-        alerts[0].AssetId.Should().Be("TON");
-        alerts[0].Amount.Should().BeGreaterThan(0);
+        result.Alerts.Should().NotBeEmpty();
+        result.Alerts[0].AssetId.Should().Be("TON");
+        result.Alerts[0].Amount.Should().BeGreaterThan(0);
     }
 
     private static BlockchainEvent CreateLargeTransferEvent()
