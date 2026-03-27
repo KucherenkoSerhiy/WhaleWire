@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: WhaleWire
+    orgId: 1
+    folder: WhaleWire
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

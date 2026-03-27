@@ -131,10 +131,13 @@ Key settings in `appsettings.json` or `.env`:
 
 **Health:** http://localhost:5007/health  
 **Metrics:** http://localhost:5007/metrics (Prometheus)  
+**Grafana:** http://localhost:3000 (dashboards; login `admin` / `GRAFANA_ADMIN_PASSWORD` from `.env`)  
 **Prometheus:** http://localhost:9090 (when using `docker compose up`)  
 **Alertmanager:** http://localhost:9093 (when using `docker compose up`)
 
 Alert rules: `prometheus/alerts/whalewire.yml` (DLQ, circuit breaker, ingestion stalled, event lag, discovery failed).
+
+**Short guide:** [docs/LAUNCH_AND_MONITORING.md](docs/LAUNCH_AND_MONITORING.md) — run stack, architecture diagram, where each UI lives.
 
 **Logs:**
 ```bash

@@ -1,5 +1,7 @@
 # WhaleWire Observability Plan
 
+**Strategy:** [ADR 0001 — Observability principles](adr/0001-observability-principles.md). **Follow-ups (lag scope, whale logs, notifiers):** [ADR 0002](adr/0002-monitoring-and-notifications-follow-ups.md).
+
 ## Implementation Status
 
 | Item | Status |
@@ -14,6 +16,7 @@
 | `whalewire_discovery_last_success_timestamp_seconds` | Done |
 | Alerting rules | Done |
 | Correlation IDs | Done |
+| Grafana (compose, overview dashboard) | Done |
 
 **Evidence:** Discovery failure test, HTTP-mocked TonCenter test, `/metrics` E2E test (`MetricsEndpointE2ETests`), `whalewire_discovery_last_success_timestamp_seconds` E2E assertion, Prometheus rules validation (`PrometheusRulesValidationTests` via promtool).
 
@@ -90,7 +93,7 @@
 |------|---------|
 | **OpenTelemetry tracing** | Spans across ingestion → handler → alert |
 | **Structured logging sink** | JSON logs to Seq/ELK/Loki |
-| **Grafana dashboard** | Pre-built dashboard for the metrics above |
+| **Grafana dashboard** | **In docker compose:** Grafana on port 3000, provisioned dashboard *WhaleWire overview* — see [LAUNCH_AND_MONITORING.md](LAUNCH_AND_MONITORING.md) |
 
 ---
 
