@@ -62,12 +62,10 @@ builder.Services.AddNotifications();
 // Metrics
 builder.Services.AddSingleton<IWhaleWireMetrics, WhaleWireMetrics>();
 
-// Health checks - RabbitMQ requires IConnection (v9+); register singleton for health check
+// Health checks - RabbitMQ requires IConnection (v9+); register singleton for health check.
+// Retry: after empty volumes / compose up, the broker can briefly refuse TCP even when depends_on health passes.
 builder.Services.AddSingleton<RabbitMQ.Client.IConnection>(sp =>
-{
-    var factory = new RabbitMQ.Client.ConnectionFactory { Uri = new Uri(rabbitMqConnectionString) };
-    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-});
+    CreateRabbitMqConnectionWithRetry(sp, rabbitMqConnectionString));
 builder.Services.AddHealthChecks()
     .AddNpgSql(postgresConnectionString, name: "postgres")
     .AddRabbitMQ(name: "rabbitmq");
@@ -99,6 +97,26 @@ using (var scope = app.Services.CreateScope())
         migrationLogger.LogError(ex, "Failed to migrate database.");
         throw;
     }
+
+    // Publish monitored-wallet gauge immediately so Prometheus/Grafana always see whalewire_monitored_addresses
+    // (discovery may fail or run later; unset gauges can be omitted from scrape output).
+    try
+    {
+        var metrics = scope.ServiceProvider.GetRequiredService<IWhaleWireMetrics>();
+        var monitoredRepo = scope.ServiceProvider.GetRequiredService<IMonitoredAddressRepository>();
+        var blockchainClient = scope.ServiceProvider.GetRequiredService<IBlockchainClient>();
+        var initialCount = await monitoredRepo.CountActiveDistinctAddressesAsync(
+            blockchainClient.Chain,
+            blockchainClient.Provider);
+        metrics.RecordActiveMonitoredAddressCount(initialCount);
+        migrationLogger.LogInformation(
+            "Published whalewire_monitored_addresses initial value: {Count}",
+            initialCount);
+    }
+    catch (Exception ex)
+    {
+        migrationLogger.LogWarning(ex, "Could not publish initial whalewire_monitored_addresses (metric may be missing until discovery runs).");
+    }
 }
 
 // Health endpoint
@@ -123,4 +141,41 @@ logger.LogInformation("  Postgres: {Status}", string.IsNullOrEmpty(postgresConne
 
 await app.RunAsync();
 
-public partial class Program;
+public partial class Program
+{
+    private static RabbitMQ.Client.IConnection CreateRabbitMqConnectionWithRetry(
+        IServiceProvider services,
+        string rabbitMqConnectionString)
+    {
+        var factory = new RabbitMQ.Client.ConnectionFactory { Uri = new Uri(rabbitMqConnectionString) };
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("WhaleWire.RabbitMqConnection");
+        const int maxAttempts = 15;
+        var delay = TimeSpan.FromSeconds(2);
+        Exception? last = null;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+                if (attempt >= maxAttempts)
+                    break;
+                logger.LogWarning(
+                    ex,
+                    "RabbitMQ not reachable (attempt {Attempt}/{Max}); retrying in {Delay}s",
+                    attempt,
+                    maxAttempts,
+                    delay.TotalSeconds);
+                Thread.Sleep(delay);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Could not connect to RabbitMQ after {maxAttempts} attempts (~{maxAttempts * delay.TotalSeconds:F0}s).",
+            last);
+    }
+}

@@ -8,10 +8,12 @@ public interface IWhaleWireMetrics
     void RecordCircuitBreakerState(int state);
     /// <summary>Time since last event per address (seconds).</summary>
     void RecordEventLag(string chain, string address, double lagSeconds);
+    /// <summary>Per-chain count of checkpoints with lag above the configured stale threshold (seconds).</summary>
+    void RecordStaleWalletLagCount(string chain, int count);
     /// <summary>DLQ message count for alerting (one message = alert).</summary>
     void RecordDlqMessageCount(string queue, int count);
-    /// <summary>Addresses discovered in last successful discovery cycle.</summary>
-    void RecordDiscoveryAddresses(int count);
+    /// <summary>Distinct active monitored wallet count (from DB) after a successful discovery cycle.</summary>
+    void RecordActiveMonitoredAddressCount(int count);
     /// <summary>Unix timestamp (seconds) of last successful discovery. Used for WhaleWireDiscoveryFailed alert.</summary>
     void RecordDiscoveryLastSuccessTimestamp(long unixTimestampSeconds);
 }

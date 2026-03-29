@@ -43,11 +43,20 @@ public sealed class EventLagMetricsCollector(
 
         var timestamps = await checkpointRepo.GetCheckpointTimestampsAsync(ct);
         var now = DateTime.UtcNow;
+        var thresholdSeconds = options.Value.StaleLagThresholdSeconds > 0
+            ? options.Value.StaleLagThresholdSeconds
+            : 900;
 
         foreach (var ts in timestamps)
         {
             var lagSeconds = (now - ts.UpdatedAt).TotalSeconds;
             metrics.RecordEventLag(ts.Chain, ts.Address, lagSeconds);
+        }
+
+        foreach (var group in timestamps.GroupBy(t => t.Chain))
+        {
+            var stale = group.Count(t => (now - t.UpdatedAt).TotalSeconds > thresholdSeconds);
+            metrics.RecordStaleWalletLagCount(group.Key, stale);
         }
     }
 }

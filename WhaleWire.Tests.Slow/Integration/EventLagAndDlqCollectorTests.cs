@@ -45,6 +45,8 @@ public sealed class EventLagAndDlqCollectorTests
             var output = Encoding.UTF8.GetString(stream.ToArray());
             output.Should().Contain("whalewire_event_lag_seconds");
             output.Should().Contain("address=\"0:COLLECTOR_LAG\"");
+            output.Should().Contain("whalewire_event_lag_stale_wallets");
+            output.Should().Contain("chain=\"ton\"");
         }
         finally
         {

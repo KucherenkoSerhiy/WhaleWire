@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using WhaleWire.Tests.Integration.TestFixtures;
 
@@ -21,8 +22,9 @@ public sealed class MetricsEndpointE2ETests(WhaleWireWebApplicationFactory facto
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
 
-        content.Should().Contain("whalewire_discovery_addresses_total");
-        content.Should().Contain("whalewire_discovery_addresses_total 4");
+        content.Should().Contain("whalewire_monitored_addresses");
+        Regex.IsMatch(content, @"whalewire_monitored_addresses\s+\d", RegexOptions.Multiline)
+            .Should().BeTrue("gauge should be exported with a numeric value (static Prometheus registry can retain values from other tests in the same process)");
         content.Should().Contain("whalewire_discovery_last_success_timestamp_seconds");
     }
 

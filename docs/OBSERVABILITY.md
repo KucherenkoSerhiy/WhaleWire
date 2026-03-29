@@ -12,7 +12,7 @@
 | `whalewire_alerts_fired_total` | Done |
 | `whalewire_circuit_breaker_state` | Done |
 | `whalewire_dlq_messages_total` | Done |
-| `whalewire_discovery_addresses_total` | Done |
+| `whalewire_monitored_addresses` | Done |
 | `whalewire_discovery_last_success_timestamp_seconds` | Done |
 | Alerting rules | Done |
 | Correlation IDs | Done |
@@ -43,10 +43,11 @@
 |--------|------|--------|---------|
 | `whalewire_events_ingested_total` | Counter | chain, address | Ingestion rate |
 | `whalewire_event_lag_seconds` | Gauge | chain, address | Time since last event per address |
+| `whalewire_event_lag_stale_wallets` | Gauge | chain | Count of checkpoints with lag above `MetricsCollector:StaleLagThresholdSeconds` (default 900 = 15m) |
 | `whalewire_alerts_fired_total` | Counter | asset, direction | Alert count |
 | `whalewire_circuit_breaker_state` | Gauge | — | 0=closed, 1=half-open, 2=open |
 | `whalewire_dlq_messages_total` | Gauge | queue | DLQ depth (or count) |
-| `whalewire_discovery_addresses_total` | Gauge | — | Addresses discovered last cycle |
+| `whalewire_monitored_addresses` | Gauge | — | Distinct active monitored wallets (chain/provider) after discovery |
 | `whalewire_discovery_last_success_timestamp_seconds` | Gauge | — | Unix timestamp of last successful discovery (for WhaleWireDiscoveryFailed) |
 
 **Endpoint:** `GET /metrics` (Prometheus format)

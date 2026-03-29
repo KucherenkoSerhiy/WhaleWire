@@ -9,7 +9,8 @@ public sealed class NullWhaleWireMetrics : IWhaleWireMetrics
     public void RecordAlertFired(string assetId, string direction) { }
     public void RecordCircuitBreakerState(int state) { }
     public void RecordEventLag(string chain, string address, double lagSeconds) { }
+    public void RecordStaleWalletLagCount(string chain, int count) { }
     public void RecordDlqMessageCount(string queue, int count) { }
-    public void RecordDiscoveryAddresses(int count) { }
+    public void RecordActiveMonitoredAddressCount(int count) { }
     public void RecordDiscoveryLastSuccessTimestamp(long unixTimestampSeconds) { }
 }

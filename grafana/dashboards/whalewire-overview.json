@@ -116,12 +116,12 @@
       "pluginVersion": "11.4.0",
       "targets": [
         {
-          "expr": "whalewire_discovery_addresses_total",
+          "expr": "whalewire_monitored_addresses",
           "legendFormat": "__auto",
           "refId": "A"
         }
       ],
-      "title": "Discovery: addresses last cycle",
+      "title": "Monitored wallets (distinct, active)",
       "type": "stat"
     },
     {
@@ -141,7 +141,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 5 },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 5 },
       "id": 10,
       "options": {
         "colorMode": "value",
@@ -159,7 +159,7 @@
           "refId": "A"
         }
       ],
-      "title": "Max event lag (worst address)",
+      "title": "Max event lag (worst wallet)",
       "type": "stat"
     },
     {
@@ -179,7 +179,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 5 },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 5 },
       "id": 11,
       "options": {
         "colorMode": "value",
@@ -197,7 +197,7 @@
           "refId": "A"
         }
       ],
-      "title": "Seconds since discovery success",
+      "title": "Time since last discovery success",
       "type": "stat"
     },
     {
@@ -209,7 +209,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 5 },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 5 },
       "id": 12,
       "options": {
         "colorMode": "value",
@@ -227,8 +227,47 @@
           "refId": "A"
         }
       ],
-      "title": "Whale alerts rate (all)",
+      "title": "Whale alerts rate (all chains, /s)",
       "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 5 },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "expr": "sum(whalewire_event_lag_stale_wallets)",
+          "legendFormat": "__auto",
+          "refId": "A"
+        }
+      ],
+      "title": "Stale checkpoints (lag > threshold; sum)",
+      "type": "stat",
+      "description": "Wallets whose checkpoint lag exceeds MetricsCollector:StaleLagThresholdSeconds (default 900s / 15m). Per-chain series: whalewire_event_lag_stale_wallets."
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -279,7 +318,7 @@
           "refId": "B"
         }
       ],
-      "title": "Events ingested rate",
+      "title": "Events ingested rate (/s)",
       "type": "timeseries"
     },
     {
@@ -322,7 +361,7 @@
       "targets": [
         {
           "expr": "max(whalewire_event_lag_seconds)",
-          "legendFormat": "max lag (s)",
+          "legendFormat": "max lag",
           "refId": "A"
         }
       ],
@@ -378,7 +417,7 @@
           "refId": "B"
         }
       ],
-      "title": "Whale alerts fired rate",
+      "title": "Whale alerts fired rate (/s)",
       "type": "timeseries"
     }
   ],

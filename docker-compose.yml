@@ -27,11 +27,13 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    # Stronger than diagnostics ping: node app started (closer to AMQP-ready than ping alone).
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
+      test: ["CMD", "rabbitmqctl", "await_startup"]
+      interval: 5s
+      timeout: 30s
+      retries: 12
+      start_period: 40s
 
   whalewire:
     build:

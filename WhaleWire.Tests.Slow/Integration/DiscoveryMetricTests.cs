@@ -56,8 +56,8 @@ public sealed class DiscoveryMetricTests
             await using var stream = new MemoryStream();
             await Prometheus.Metrics.DefaultRegistry.CollectAndExportAsTextAsync(stream);
             var output = Encoding.UTF8.GetString(stream.ToArray());
-            output.Should().Contain("whalewire_discovery_addresses_total");
-            output.Should().Contain("whalewire_discovery_addresses_total 3");
+            output.Should().Contain("whalewire_monitored_addresses");
+            output.Should().Contain("whalewire_monitored_addresses 3");
         }
         finally
         {
@@ -77,8 +77,8 @@ public sealed class DiscoveryMetricTests
             await using var stream = new MemoryStream();
             await Prometheus.Metrics.DefaultRegistry.CollectAndExportAsTextAsync(stream);
             var output = Encoding.UTF8.GetString(stream.ToArray());
-            output.Should().Contain("whalewire_discovery_addresses_total");
-            output.Should().Contain("whalewire_discovery_addresses_total 5");
+            output.Should().Contain("whalewire_monitored_addresses");
+            output.Should().Contain("whalewire_monitored_addresses 5");
         }
         finally
         {

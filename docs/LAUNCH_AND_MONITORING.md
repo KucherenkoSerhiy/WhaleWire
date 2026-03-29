@@ -62,7 +62,7 @@ Code layout: **Domain** (`WhaleWire.Domain`), **application use cases** (`WhaleW
 | **App metrics** | http://localhost:5007/metrics | Same series Prometheus scrapes; useful for curl/debug. |
 | **RabbitMQ UI** | http://localhost:15672 | Queue lengths, **including DLQ** `*.dlq` — ground truth next to `whalewire_dlq_messages_total`. |
 
-Metric names (also on the Grafana dashboard): `whalewire_dlq_messages_total`, `whalewire_circuit_breaker_state`, `whalewire_events_ingested_total`, `whalewire_event_lag_seconds`, `whalewire_discovery_*`, `whalewire_alerts_fired_total`. Alert rules: `prometheus/alerts/whalewire.yml`.
+Metric names (also on the Grafana dashboard): `whalewire_dlq_messages_total`, `whalewire_circuit_breaker_state`, `whalewire_events_ingested_total`, `whalewire_event_lag_seconds`, `whalewire_monitored_addresses`, `whalewire_discovery_last_success_timestamp_seconds`, `whalewire_alerts_fired_total`. Alert rules: `prometheus/alerts/whalewire.yml`.
 
 ---
 

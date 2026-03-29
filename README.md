@@ -162,15 +162,6 @@ docker compose logs -f whalewire | grep "Discovery\|Ingestion"
 
 ---
 
-## Next Steps (Chapter 9)
-
-- [x] Alert rules (whale transfers > 100 TON, console notifications)
-- [x] Metrics & observability (Prometheus `/metrics`, discovery, circuit breaker, event lag, DLQ)
-- [ ] Telegram/Discord notifications
-- [ ] Admin API (pause/resume, manual address add)
-
----
-
 ## License
 
 MIT

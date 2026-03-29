@@ -118,4 +118,28 @@ public sealed class MonitoredAddressRepositoryTests : InMemoryDbContextFixture
 
         await act.Should().NotThrowAsync();
     }
+
+    [Fact]
+    public async Task CountActiveDistinctAddressesAsync_CountsOnePerWalletAcrossAssets()
+    {
+        await _repository.UpsertAddressAsync("ton", "addr1", "tonapi", "TON", "1000");
+        await _repository.UpsertAddressAsync("ton", "addr1", "tonapi", "NOT", "2000");
+        await _repository.UpsertAddressAsync("ton", "addr2", "tonapi", "TON", "3000");
+
+        var count = await _repository.CountActiveDistinctAddressesAsync("ton", "tonapi");
+
+        count.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task CountActiveDistinctAddressesAsync_ExcludesInactiveRows()
+    {
+        await _repository.UpsertAddressAsync("ton", "addr1", "tonapi", "TON", "1000");
+        await _repository.UpsertAddressAsync("ton", "addr2", "tonapi", "TON", "2000");
+        await _repository.DeactivateAddressAsync("ton", "addr1", "tonapi", "TON");
+
+        var count = await _repository.CountActiveDistinctAddressesAsync("ton", "tonapi");
+
+        count.Should().Be(1);
+    }
 }

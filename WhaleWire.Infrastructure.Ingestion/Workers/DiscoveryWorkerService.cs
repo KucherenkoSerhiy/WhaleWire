@@ -2,7 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using WhaleWire.Application.Blockchain;
 using WhaleWire.Application.Metrics;
+using WhaleWire.Application.Persistence;
 using WhaleWire.Application.UseCases;
 
 namespace WhaleWire.Infrastructure.Ingestion.Workers;
@@ -54,12 +56,21 @@ public sealed class DiscoveryWorkerService(
         {
             using var scope = serviceProvider.CreateScope();
             var discoveryUseCase = scope.ServiceProvider.GetRequiredService<IDiscoveryUseCase>();
+            var blockchainClient = scope.ServiceProvider.GetRequiredService<IBlockchainClient>();
+            var monitoredRepo = scope.ServiceProvider.GetRequiredService<IMonitoredAddressRepository>();
 
-            var count = await discoveryUseCase.ExecuteAsync(_options.TopAccountsLimit, ct);
+            var upsertedFromProvider = await discoveryUseCase.ExecuteAsync(_options.TopAccountsLimit, ct);
+            var totalMonitored = await monitoredRepo.CountActiveDistinctAddressesAsync(
+                blockchainClient.Chain,
+                blockchainClient.Provider,
+                ct);
 
-            metrics.RecordDiscoveryAddresses(count);
+            metrics.RecordActiveMonitoredAddressCount(totalMonitored);
             metrics.RecordDiscoveryLastSuccessTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            logger.LogInformation("Discovery completed: {Count} addresses updated", count);
+            logger.LogInformation(
+                "Discovery completed: {Upserted} holder rows from provider; {TotalMonitored} distinct active monitored wallets",
+                upsertedFromProvider,
+                totalMonitored);
         }
         catch (Exception ex)
         {

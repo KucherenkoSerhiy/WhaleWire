@@ -79,4 +79,11 @@ public sealed class MonitoredAddressRepository(WhaleWireDbContext db) : IMonitor
             await db.SaveChangesAsync(ct);
         }
     }
+
+    public Task<int> CountActiveDistinctAddressesAsync(string chain, string provider, CancellationToken ct = default) =>
+        db.MonitoredAddresses
+            .Where(m => m.Chain == chain && m.Provider == provider && m.IsActive)
+            .Select(m => m.Address)
+            .Distinct()
+            .CountAsync(ct);
 }
